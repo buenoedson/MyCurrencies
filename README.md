@@ -2,67 +2,126 @@
 
 [🇧🇷 Português](#português) | [🇺🇸 English](#english) | [🇪🇸 Español](#español) | [🇫🇷 Français](#français) | [🇩🇪 Deutsch](#deutsch) | [🇮🇹 Italiano](#italiano) | [🇷🇺 Русский](#русский) | [🇨🇳 中文](#中文简体) | [🇹🇼 繁體中文](#中文繁体) | [🇰🇷 한국어](#한국어)
 
+Um addon simples para **World of Warcraft** que monitora suas moedas e itens de todas as expansões. **Agora em 10 idiomas!**
+
+---
+
+## 🌍 Características
+
+- 💰 Rastreamento de moedas por expansão
+- 📦 Itens colecionáveis e hidden currencies
+- 🎨 Personalizável (tamanho, posição, colunas)
+- 🌐 **10 idiomas**: PT, EN, ES, FR, DE, IT, RU, ZH-CN, ZH-TW, KO
+- 🔄 Detecção automática do idioma
+- 📍 Posição salva automaticamente
+
+---
+
+## 🚀 Instalação
+
+1. Baixe a pasta `MyCurrencies`
+2. Extraia para: `World of Warcraft\_retail_\Interface\AddOns\`
+3. Execute `/reload` no jogo
+4. Abra com `/mycurrencies` ou `/mc`
+
+---
+
+## ⚙️ Comandos
+
+```
+/mycurrencies       Abre o painel
+/mc                 Atalho
+/mycurrencies reset Reseta para posição padrão
+```
+
+---
+
+## 🌐 Idiomas
+
+O addon **detecta automaticamente** seu idioma. Para mudar:
+1. Abra: `/mycurrencies`
+2. Clique em "Language" (ou tradutor para seu idioma)
+3. Selecione outro idioma
+4. Recarrega automaticamente
+
+**Suportados**: 🇧🇷 PT • 🇺🇸 EN • 🇪🇸 ES • 🇫🇷 FR • 🇩🇪 DE • 🇮🇹 IT • 🇷🇺 RU • 🇨🇳 ZH-CN • 🇹🇼 ZH-TW • 🇰🇷 KO
+
+---
+
+## 👨‍💻 Para Desenvolvedores
+
+### Sistema de Localização
+
+O addon usa um sistema simples de localização. Para adicionar texto traduzido:
+
+```lua
+local L = MyCurrenciesL
+
+-- Obter string traduzida
+local texto = L:S("CHAVE_AQUI")
+
+-- Exemplo:
+local iconeLabel = L:S("ICON_SIZE")
+```
+
+### Adicionar Nova Chave
+
+1. Abra `Localization.lua`
+2. Adicione em TODAS as tabelas de idioma:
+```lua
+ptBR = { SUA_CHAVE = "Texto em português", ... },
+enUS = { SUA_CHAVE = "Text in English", ... },
+-- ... outros idiomas
+```
+3. Use no código: `L:S("SUA_CHAVE")`
+
+### Adicionar Novo Idioma
+
+1. Em `Localization.lua`, adicione em `wowLocales`:
+```lua
+["myCode"] = "Nome do Idioma"
+```
+
+2. Crie tabela de tradução com todas as chaves
+
+3. Se necessário, atualize `GetDefaultLanguage()` para mapear novo locale WoW
+
+---
+
+## 📝 Estrutura do Projeto
+
+```
+MyCurrencies/
+├── Localization.lua      Tabelas de tradução (10 idiomas)
+├── MyCurrencies.lua      Código principal
+├── MyCurrencies.toc      Manifesto do addon
+└── README.md             Este arquivo
+```
+
+---
+
+## 🐛 Troubleshooting
+
+**P: Addon em idioma errado?**  
+R: Delete `SavedVariables/MyCurrencies.lua` em WTF ou selecione novo idioma em `/mycurrencies`
+
+**P: Moedas não aparecem?**  
+R: Visite a zona/expansão específica para atualizar. Algumas moedas ocultas só aparecem após serem obtidas.
+
+**P: Posição foi resetada?**  
+R: Execute `/mycurrencies reset` para repositonar, ou arraste manualmente e salve.
+
+---
+
+## 📄 Licença
+
+Criado para a comunidade WoW.
+
 ---
 
 ## Português
 
 Um addon simples e prático para **World of Warcraft** que monitora suas moedas, itens colecionáveis e recursos de todas as expansões em um único lugar.
-
-### 📋 Funcionalidades
-
-- 💰 **Rastreamento de Moedas**: Monitore todas as moedas do jogo por expansão
-- 📦 **Itens Colecionáveis**: Acompanhe itens especiais e ocultos (hidden currencies)
-- 🗺️ **Organização por Expansão**: Categorize recursos por The War Within, Dragonflight, Shadowlands, e mais
-- ⚙️ **Personalizável**: Ajuste tamanho de ícone, texto, colunas e posição na tela
-- 🎯 **Filtro Inteligente**: Opção de mostrar apenas moedas quando descansando
-- 📍 **Persistência**: Suas configurações são salvas automaticamente
-
-### 🚀 Instalação
-
-1. Clone ou baixe este repositório
-2. Extraia a pasta `MyCurrencies` para:
-   ```
-   World of Warcraft\_retail_\Interface\AddOns\
-   ```
-3. Reinicie o WoW ou execute `/reload`
-4. O addon aparecerá na tela com suas moedas
-
-### 📖 Como Usar
-
-**Comandos Básicos:**
-```
-/mycurrencies    - Abre o painel principal
-/mycurrencies toggle - Alterna visibilidade
-/mycurrencies reset - Reseta para posição padrão
-```
-
-**Configurações:**
-- **Tamanho de Ícone**: Ajuste o tamanho dos ícones de moeda (padrão: 32px)
-- **Tamanho de Texto**: Customize o tamanho da fonte (padrão: 12px)
-- **Colunas**: Defina quantas colunas exibir (padrão: 10)
-- **Mostrar Apenas em Descanso**: Ative para ver apenas quando em pousada
-
-### 📦 Expansões Suportadas
-
-- ✨ **Midnight** (Expansão mais recente)
-- 🌊 **The War Within**
-- 🐉 **Dragonflight**
-- 👻 **Shadowlands**
-- ⚔️ **Battle for Azeroth**
-- 🔥 **Legion**
-- 🛡️ **Warlords of Draenor**
-- 🌸 **Mists of Pandaria**
-- ❄️ **Wrath of the Lich King**
-- 🔮 **Burning Crusade**
-
-### 🎮 Requisitos
-
-- World of Warcraft Retail (versão 12.0+)
-- Interface padrão do WoW
-
----
-
-## English
 
 A simple and practical addon for **World of Warcraft** that monitors your currencies, collectible items and resources from all expansions in one place.
 

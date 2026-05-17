@@ -2,8 +2,9 @@
 ## Title: My Currencies Tracker
 ## Notes: Monitor de moedas simples.
 ## Author: Custom
-## Version: 1.0
+## Version: 2026.05.17.2
 ## SavedVariables: MyCurrenciesDB
 ## IconTexture: Interface\Icons\INV_Misc_Coin_01
 
+Localization.lua
 MyCurrencies.lua

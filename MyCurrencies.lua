@@ -1,7 +1,9 @@
 local addonName, ns = ...
+local L = MyCurrenciesL
 
 -- --- DADOS PADRÃO ---
 local defaults = {
+    language = L:GetDefaultLanguageCode(),
     iconSize = 32,
     textSize = 12,
     columns = 10,
@@ -453,42 +455,69 @@ local function CreateOptionsPanel()
     
     local title = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
     title:SetPoint("TOPLEFT", 16, -16)
-    title:SetText("My Currencies Tracker")
+    title:SetText(L:S("ADDON_TITLE"))
+
+    -- Language dropdown
+    local languageLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    languageLabel:SetPoint("TOPLEFT", 20, -50)
+    languageLabel:SetText(L:S("LANGUAGE") .. ":")
+    
+    local langDropdown = CreateFrame("Frame", "MC_LanguageDropdown", panel, "UIDropDownMenuTemplate")
+    langDropdown:SetPoint("TOPLEFT", 20, -70)
+    
+    local langOptions = L:GetAvailableLanguages()
+    local function InitializeLanguageDropdown(frame, level)
+        for _, langOption in ipairs(langOptions) do
+            local info = UIDropDownMenu_CreateInfo()
+            info.text = langOption.name
+            info.value = langOption.code
+            info.func = function(self)
+                MyCurrenciesDB.language = self.value
+                UIDropDownMenu_SetSelectedValue(langDropdown, self.value)
+                -- Reload UI para atualizar strings
+                C_Timer.After(0.5, function() ReloadUI() end)
+            end
+            UIDropDownMenu_AddButton(info, level)
+        end
+    end
+    
+    UIDropDownMenu_Initialize(langDropdown, InitializeLanguageDropdown)
+    UIDropDownMenu_SetSelectedValue(langDropdown, MyCurrenciesDB.language or L:GetDefaultLanguageCode())
 
     local sliderIcon = CreateFrame("Slider", "MC_IconSizeSlider", panel, "OptionsSliderTemplate")
-    sliderIcon:SetPoint("TOPLEFT", 20, -50)
+    sliderIcon:SetPoint("TOPLEFT", 20, -120)
     sliderIcon:SetMinMaxValues(16, 64)
     sliderIcon:SetValueStep(2)
     sliderIcon:SetValue(MyCurrenciesDB.iconSize)
     _G[sliderIcon:GetName() .. "Low"]:SetText("16")
     _G[sliderIcon:GetName() .. "High"]:SetText("64")
-    _G[sliderIcon:GetName() .. "Text"]:SetText("Tamanho do Ícone")
+    _G[sliderIcon:GetName() .. "Text"]:SetText(L:S("ICON_SIZE"))
     sliderIcon:SetScript("OnValueChanged", function(self, value) MyCurrenciesDB.iconSize = value UpdateDisplay() end)
 
     local sliderText = CreateFrame("Slider", "MC_TextSizeSlider", panel, "OptionsSliderTemplate")
-    sliderText:SetPoint("TOPLEFT", 200, -50)
+    sliderText:SetPoint("TOPLEFT", 200, -120)
     sliderText:SetMinMaxValues(8, 24)
     sliderText:SetValueStep(1)
     sliderText:SetValue(MyCurrenciesDB.textSize)
     _G[sliderText:GetName() .. "Low"]:SetText("8")
     _G[sliderText:GetName() .. "High"]:SetText("24")
-    _G[sliderText:GetName() .. "Text"]:SetText("Tamanho do Texto")
+    _G[sliderText:GetName() .. "Text"]:SetText(L:S("TEXT_SIZE"))
     sliderText:SetScript("OnValueChanged", function(self, value) MyCurrenciesDB.textSize = value UpdateDisplay() end)
     
     local cbRest = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
-    cbRest:SetPoint("TOPLEFT", 20, -90)
-    cbRest.text:SetText("Mostrar apenas em Áreas de Descanso")
+    cbRest:SetPoint("TOPLEFT", 20, -160)
+    cbRest.text:SetText(L:S("SHOW_ONLY_RESTING"))
     cbRest:SetChecked(MyCurrenciesDB.showOnlyResting)
     cbRest:SetScript("OnClick", function(self) MyCurrenciesDB.showOnlyResting = self:GetChecked() UpdateDisplay() end)
 
     local cbRegion = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
-    cbRegion:SetPoint("TOPLEFT", 20, -115)
-    cbRegion.text:SetText("Mostrar apenas moedas da expansão atual")
+    cbRegion:SetPoint("TOPLEFT", 20, -185)
+    cbRegion.text:SetText(L:S("SHOW_ONLY_EXPANSION"))
     cbRegion:SetChecked(MyCurrenciesDB.autoFilterRegion)
     cbRegion:SetScript("OnClick", function(self) MyCurrenciesDB.autoFilterRegion = self:GetChecked() UpdateDisplay() end)
 
     local scrollFrame = CreateFrame("ScrollFrame", "MC_ScrollFrame", panel, "UIPanelScrollFrameTemplate")
-    scrollFrame:SetPoint("TOPLEFT", 20, -155)
+    scrollFrame:SetPoint("TOPLEFT", 20, -225)
     scrollFrame:SetPoint("BOTTOMRIGHT", -30, 20)
     
     local scrollChild = CreateFrame("Frame")
@@ -497,7 +526,7 @@ local function CreateOptionsPanel()
 
     local cbAll = CreateFrame("CheckButton", nil, scrollChild, "UICheckButtonTemplate")
     cbAll:SetPoint("TOPLEFT", 0, 0)
-    cbAll.text:SetText("|cFF00FF00[ MARCAR / DESMARCAR TUDO ]|r")
+    cbAll.text:SetText("|cFF00FF00" .. L:S("SELECT_ALL") .. "|r")
     cbAll:SetChecked(true)
     cbAll:SetScript("OnClick", function(self)
         local state = self:GetChecked()
