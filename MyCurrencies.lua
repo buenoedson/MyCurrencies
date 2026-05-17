@@ -10,59 +10,15 @@ local defaults = {
     showOnlyResting = false,
     autoFilterRegion = false, 
     visibility = {},
-    position = nil
-}
-
--- ============================================================================
--- MAPA DE CONTINENTES E ZONAS PARA EXPANSÕES
--- ============================================================================
-local mapToExpansions = {
-    -- === MIDNIGHT (12.0) ===
-    [2393] = "Midnight",       -- Silvermoon
-    [2395] = "Midnight",       -- Eversong Woods
-    [2413] = "Midnight",       -- Harandar
-    [2576] = "Midnight",       -- The Den
-    [2437] = "Midnight",       -- Zul’Aman
-    [2536] = "Midnight",       -- Atal’Aman
-	[2405] = "Midnight",       -- Voidstorm
-
-    -- === THE WAR WITHIN ===
-    [2274] = "The War Within", -- Khaz Algar
-    
-    -- === DRAGONFLIGHT ===
-    [1978] = "Dragonflight",   -- Dragon Isles
-    [2133] = "Dragonflight",   -- Cavernas de Zaralek
-    [2200] = "Dragonflight",   -- Sonho Esmeralda
-    
-    -- === SHADOWLANDS ===
-    [1550] = "Shadowlands",    -- Shadowlands (Geral)
-    [1670] = "Shadowlands",    -- Oribos
-    [1543] = "Shadowlands",    -- The Maw
-    [1961] = "Shadowlands",    -- Korthia
-    [1970] = "Shadowlands",    -- Zereth Mortis
-    
-    -- === BATTLE FOR AZEROTH ===
-    [875]  = "Battle for Azeroth", -- Zandalar
-    [876]  = "Battle for Azeroth", -- Kul Tiras
-    [1355] = "Battle for Azeroth", -- Nazjatar
-    [1462] = "Battle for Azeroth", -- Mechagon
-    
-    -- === LEGION ===
-    [619]  = "Legion",         -- Ilhas Partidas
-    [905]  = "Legion",         -- Argus
-    
-    -- === EXPANSÕES ANTIGAS ===
-    [572]  = "Warlords of Draenor", -- Draenor
-    [424]  = "Mists of Pandaria",   -- Pandaria
-    [113]  = "Wrath of the Lich King", -- Nortúndria
-    [101]  = "Burning Crusade"      -- Terralém
+    position = nil,
+    customItems = {}  -- Moedas/itens adicionados pelo usuário
 }
 
 local function GetCurrentExpansionCategory()
     local mapID = C_Map.GetBestMapForUnit("player")
     while mapID and mapID > 0 do
-        if mapToExpansions[mapID] then
-            return mapToExpansions[mapID]
+        if ns.mapToExpansions[mapID] then
+            return ns.mapToExpansions[mapID]
         end
         local info = C_Map.GetMapInfo(mapID)
         if info and info.parentMapID then
@@ -80,54 +36,74 @@ end
 local manualData = {
 
 	-- ITENS E MOEDAS OCULTAS - MIDNIGHT
-    { cat = "Moeda oculta - Midnight", type = 'currency', id = 3378, name = "Dawnlight Manaflux" },
-    -- ITENS - THE WAR WITHIN
-    { cat = "Itens - The War Within", type = 'item', id = 210814, name = "Artisan's Acuity" },
-    { cat = "Itens - The War Within", type = 'item', id = 245653, name = "Coffer Key Shard", threshold = 100 }, 
-    { cat = "Itens - The War Within", type = 'item', id = 234741, name = "Miscellaneous Mechanica" },
-    { cat = "Itens - The War Within", type = 'item', id = 212493, name = "Odd Glob of Wax" },
-    { cat = "Itens - The War Within", type = 'item', id = 206350, name = "Radiant Remnant" },
-    { cat = "Itens - The War Within", type = 'item', id = 225557, name = "Sizzling Cinderpollen" },
-    { cat = "Moeda oculta - The War Within", type = 'currency', id = 3269, name = "Ethereal Voidsplinter" },
+    { cat = "Midnight - Moeda oculta", type = 'currency', id = 3378, name = "Dawnlight Manaflux" },
+    { cat = "Midnight - Itens", type = 'item', id = 246951, name = "Stormarion Core" },
+    -- The War Within - Itens
+    { cat = "The War Within - Itens", type = 'item', id = 210814, name = "Artisan's Acuity" },
+    { cat = "The War Within - Itens", type = 'item', id = 245653, name = "Coffer Key Shard", threshold = 100 }, 
+    { cat = "The War Within - Itens", type = 'item', id = 234741, name = "Miscellaneous Mechanica" },
+    { cat = "The War Within - Itens", type = 'item', id = 212493, name = "Odd Glob of Wax" },
+    { cat = "The War Within - Itens", type = 'item', id = 206350, name = "Radiant Remnant" },
+    { cat = "The War Within - Itens", type = 'item', id = 225557, name = "Sizzling Cinderpollen" },
+    { cat = "The War Within - Moeda oculta", type = 'currency', id = 3269, name = "Ethereal Voidsplinter" },
     
-    -- ITENS - DRAGONFLIGHT
-    { cat = "Itens - Dragonflight", type = 'item', id = 204988, name = "Barter Brick" },
-    { cat = "Itens - Dragonflight", type = 'item', id = 205984, name = "Barter Boulder" },
-    { cat = "Itens - Dragonflight", type = 'item', id = 199198, name = "Centaur Hunting Trophy" },
-    { cat = "Itens - Dragonflight", type = 'item', id = 202058, name = "Copper Coin of the Isles" },
-    { cat = "Itens - Dragonflight", type = 'item', id = 202102, name = "Coveted Bauble" },
-    { cat = "Itens - Dragonflight", type = 'item', id = 204726, name = "Dormant Primordial Fragment" },
-    { cat = "Itens - Dragonflight", type = 'item', id = 190453, name = "Dragon Isles Artifact" },
-    { cat = "Itens - Dragonflight", type = 'item', id = 208151, name = "Dreamsurge Coalescence" },
-    { cat = "Itens - Dragonflight", type = 'item', id = 205246, name = "Essence of The Storm" },
-    { cat = "Itens - Dragonflight", type = 'item', id = 208066, name = "Gigantic Dreamseed" },
-    { cat = "Itens - Dragonflight", type = 'item', id = 202059, name = "Gold Coin of the Isles" },
-    { cat = "Itens - Dragonflight", type = 'item', id = 191264, name = "Greater Obsidian Key" },
-    { cat = "Itens - Dragonflight", type = 'item', id = 193201, name = "Key Fragments" },
-    { cat = "Itens - Dragonflight", type = 'item', id = 191251, name = "Key Framing" },
-    { cat = "Itens - Dragonflight", type = 'item', id = 190330, name = "Mark of Sargha" },
-    { cat = "Itens - Dragonflight", type = 'item', id = 199066, name = "Magmote" },
-    { cat = "Itens - Dragonflight", type = 'item', id = 208067, name = "Plump Dreamseed" },
-    { cat = "Itens - Dragonflight", type = 'item', id = 191263, name = "Restored Obsidian Key" },
-    { cat = "Itens - Dragonflight", type = 'item', id = 199906, name = "Sacred Tuskarr Totem" },
-    { cat = "Itens - Dragonflight", type = 'item', id = 190328, name = "Sargha's Signet" },
-    { cat = "Itens - Dragonflight", type = 'item', id = 210986, name = "Seedbloom" },
-    { cat = "Itens - Dragonflight", type = 'item', id = 202060, name = "Silver Coin of the Isles" },
-    { cat = "Itens - Dragonflight", type = 'item', id = 208047, name = "Small Dreamseed" },
-    { cat = "Itens - Dragonflight", type = 'item', id = 199905, name = "Titan Relic" },
-    { cat = "Itens - Dragonflight", type = 'item', id = 202196, name = "Unearthed Fragrant Coin" },
-    { cat = "Itens - Dragonflight", type = 'item', id = 203422, name = "Zskera Vault Key" },
+    -- Dragonflight - Itens
+    { cat = "Dragonflight - Itens", type = 'item', id = 204988, name = "Barter Brick" },
+    { cat = "Dragonflight - Itens", type = 'item', id = 205984, name = "Barter Boulder" },
+    { cat = "Dragonflight - Itens", type = 'item', id = 199198, name = "Centaur Hunting Trophy" },
+    { cat = "Dragonflight - Itens", type = 'item', id = 202058, name = "Copper Coin of the Isles" },
+    { cat = "Dragonflight - Itens", type = 'item', id = 202102, name = "Coveted Bauble" },
+    { cat = "Dragonflight - Itens", type = 'item', id = 204726, name = "Dormant Primordial Fragment" },
+    { cat = "Dragonflight - Itens", type = 'item', id = 190453, name = "Dragon Isles Artifact" },
+    { cat = "Dragonflight - Itens", type = 'item', id = 208151, name = "Dreamsurge Coalescence" },
+    { cat = "Dragonflight - Itens", type = 'item', id = 205246, name = "Essence of The Storm" },
+    { cat = "Dragonflight - Itens", type = 'item', id = 208066, name = "Gigantic Dreamseed" },
+    { cat = "Dragonflight - Itens", type = 'item', id = 202059, name = "Gold Coin of the Isles" },
+    { cat = "Dragonflight - Itens", type = 'item', id = 191264, name = "Greater Obsidian Key" },
+    { cat = "Dragonflight - Itens", type = 'item', id = 193201, name = "Key Fragments" },
+    { cat = "Dragonflight - Itens", type = 'item', id = 191251, name = "Key Framing" },
+    { cat = "Dragonflight - Itens", type = 'item', id = 190330, name = "Mark of Sargha" },
+    { cat = "Dragonflight - Itens", type = 'item', id = 199066, name = "Magmote" },
+    { cat = "Dragonflight - Itens", type = 'item', id = 208067, name = "Plump Dreamseed" },
+    { cat = "Dragonflight - Itens", type = 'item', id = 191263, name = "Restored Obsidian Key" },
+    { cat = "Dragonflight - Itens", type = 'item', id = 199906, name = "Sacred Tuskarr Totem" },
+    { cat = "Dragonflight - Itens", type = 'item', id = 190328, name = "Sargha's Signet" },
+    { cat = "Dragonflight - Itens", type = 'item', id = 210986, name = "Seedbloom" },
+    { cat = "Dragonflight - Itens", type = 'item', id = 202060, name = "Silver Coin of the Isles" },
+    { cat = "Dragonflight - Itens", type = 'item', id = 208047, name = "Small Dreamseed" },
+    { cat = "Dragonflight - Itens", type = 'item', id = 199905, name = "Titan Relic" },
+    { cat = "Dragonflight - Itens", type = 'item', id = 202196, name = "Unearthed Fragrant Coin" },
+    { cat = "Dragonflight - Itens", type = 'item', id = 203422, name = "Zskera Vault Key" },
 
     -- ITENS - SHADOWLANDS E ANTIGOS
-    { cat = "Itens - Antigos", type = 'item', id = 187440, name = "Attendant's Token of Merit" },
-    { cat = "Itens - Antigos", type = 'item', id = 188657, name = "Genesis Mote" },
-    { cat = "Itens - Antigos", type = 'item', id = 188959, name = "Sandworn Relic" },
-    { cat = "Itens - Antigos", type = 'item', id = 21100, name = "Coin of Ancestry" },
-    { cat = "Itens - Antigos", type = 'item', id = 116035, name = "Darkmoon Game Token" },
-    { cat = "Itens - Antigos", type = 'item', id = 49927, name = "Love Token" }
+    { cat = "Antigos - Itens", type = 'item', id = 187440, name = "Attendant's Token of Merit" },
+    { cat = "Antigos - Itens", type = 'item', id = 188657, name = "Genesis Mote" },
+    { cat = "Antigos - Itens", type = 'item', id = 188959, name = "Sandworn Relic" },
+    { cat = "Antigos - Itens", type = 'item', id = 21100, name = "Coin of Ancestry" },
+    { cat = "Antigos - Itens", type = 'item', id = 116035, name = "Darkmoon Game Token" },
+    { cat = "Antigos - Itens", type = 'item', id = 49927, name = "Love Token" }
 }
 
 local trackedData = {}
+
+-- ============================================================================
+-- CARREGA MOEDAS CUSTOMIZADAS DO USUÁRIO
+-- ============================================================================
+local function LoadCustomItems()
+    if not MyCurrenciesDB.customItems then return end
+    
+    for _, item in ipairs(MyCurrenciesDB.customItems) do
+        if item.id and item.cat then
+            table.insert(trackedData, {
+                cat = item.cat,
+                type = item.type or 'item',
+                id = item.id,
+                name = item.name or "Custom Item",
+                custom = true
+            })
+        end
+    end
+end
 
 -- ============================================================================
 -- SCANNER DINÂMICO DE MOEDAS COM SUPORTE A SUBCATEGORIAS
@@ -203,6 +179,7 @@ local function LoadGameCurrencies()
     end
     
     trackedData = finalData
+    LoadCustomItems()  -- Carrega moedas customizadas
 end
 
 -- ============================================================================
@@ -449,8 +426,124 @@ local function UpdateDisplay()
     end
 end
 
+local optionsPanel
+local scrollChild
+local catCheckboxes = {}
+local removeButtons = {}
+
+local function UpdateOptionsList(filterText)
+    if not scrollChild then return end
+    filterText = filterText and string.lower(filterText) or ""
+    
+    for _, cb in ipairs(optionCheckboxes) do cb:Hide() end
+    for _, cb in ipairs(catCheckboxes) do cb:Hide() end
+    for _, btn in pairs(removeButtons) do btn:Hide() end
+    
+    local yOffset = -70
+    local lastCategory = ""
+    local catIndex = 1
+    
+    local visibleIndices = {}
+    for i, data in ipairs(trackedData) do
+        local match = filterText == "" or string.find(string.lower(data.name or ""), filterText, 1, true) or string.find(string.lower(data.cat or ""), filterText, 1, true)
+        if match then visibleIndices[i] = true end
+    end
+
+    for i, data in ipairs(trackedData) do
+        if visibleIndices[i] then
+            if data.cat ~= lastCategory then
+                yOffset = yOffset - 10
+                local catHeaderCB = catCheckboxes[catIndex]
+                if not catHeaderCB then
+                    catHeaderCB = CreateFrame("CheckButton", nil, scrollChild, "UICheckButtonTemplate")
+                    catCheckboxes[catIndex] = catHeaderCB
+                end
+                catHeaderCB:ClearAllPoints()
+                catHeaderCB:SetPoint("TOPLEFT", 0, yOffset)
+                catHeaderCB.text:SetText("|cFFFFD100" .. data.cat .. "|r")
+                catHeaderCB:SetChecked(true)
+                catHeaderCB:Show()
+                
+                local targetCat = data.cat
+                catHeaderCB:SetScript("OnClick", function(self)
+                    local state = self:GetChecked()
+                    for k, v in ipairs(trackedData) do
+                        if v.cat == targetCat then
+                            MyCurrenciesDB.visibility[v.id] = state
+                            if optionCheckboxes[k] then optionCheckboxes[k]:SetChecked(state) end
+                        end
+                    end
+                    UpdateDisplay()
+                end)
+                yOffset = yOffset - 25
+                lastCategory = data.cat
+                catIndex = catIndex + 1
+            end
+        
+            local cb = optionCheckboxes[i]
+            if not cb then
+                cb = CreateFrame("CheckButton", nil, scrollChild, "UICheckButtonTemplate")
+                optionCheckboxes[i] = cb
+            end
+            cb:ClearAllPoints()
+            cb:SetPoint("TOPLEFT", 20, yOffset)
+            cb.text:SetText(data.name)
+            cb:Show()
+            
+            if MyCurrenciesDB.visibility[data.id] == nil then cb:SetChecked(true)
+            else cb:SetChecked(MyCurrenciesDB.visibility[data.id]) end
+            
+            cb:SetScript("OnClick", function(self) MyCurrenciesDB.visibility[data.id] = self:GetChecked() UpdateDisplay() end)
+            
+            if data.custom then
+                local delBtn = removeButtons[i]
+                if not delBtn then
+                    delBtn = CreateFrame("Button", nil, scrollChild, "UIPanelCloseButton")
+                    delBtn:SetSize(24, 24)
+                    removeButtons[i] = delBtn
+                end
+                delBtn:ClearAllPoints()
+                delBtn:SetPoint("LEFT", cb.text, "RIGHT", 5, 0)
+                delBtn:Show()
+                
+                delBtn:SetScript("OnClick", function()
+                    for idx, customItem in ipairs(MyCurrenciesDB.customItems) do
+                        if customItem.id == data.id then
+                            table.remove(MyCurrenciesDB.customItems, idx)
+                            break
+                        end
+                    end
+                    LoadGameCurrencies()
+                    UpdateLocalizedNames()
+                    UpdateOptionsList(MC_SearchBox and MC_SearchBox:GetText() or "")
+                    UpdateDisplay()
+                    print("|cFFFF6B6B" .. (L:S("REMOVED") or "Removed:") .. " " .. data.name .. "|r")
+                end)
+            end
+            
+            yOffset = yOffset - 25
+        end
+    end
+    scrollChild:SetHeight(math.abs(yOffset) + 20)
+end
+
+local function GetCategoryList()
+    local uniqueCategories = {}
+    local categoriesList = {}
+    for _, data in ipairs(trackedData) do
+        if data.cat and not uniqueCategories[data.cat] then
+            uniqueCategories[data.cat] = true
+            table.insert(categoriesList, data.cat)
+        end
+    end
+    table.sort(categoriesList)
+    return categoriesList
+end
+
 local function CreateOptionsPanel()
+    if optionsPanel then return end
     local panel = CreateFrame("Frame", "MyCurrenciesOptions", UIParent)
+    optionsPanel = panel
     panel.name = "My Currencies"
     
     local title = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
@@ -474,8 +567,8 @@ local function CreateOptionsPanel()
             info.func = function(self)
                 MyCurrenciesDB.language = self.value
                 UIDropDownMenu_SetSelectedValue(langDropdown, self.value)
-                -- Reload UI para atualizar strings
-                C_Timer.After(0.5, function() ReloadUI() end)
+                -- Aviso para recarregar a interface
+                print("|cFFFFD100My Currencies:|r |cFF00FF00" .. (L:S("RELOAD_REQUIRED") or "Please type /reload to apply language changes.") .. "|r")
             end
             UIDropDownMenu_AddButton(info, level)
         end
@@ -516,11 +609,167 @@ local function CreateOptionsPanel()
     cbRegion:SetChecked(MyCurrenciesDB.autoFilterRegion)
     cbRegion:SetScript("OnClick", function(self) MyCurrenciesDB.autoFilterRegion = self:GetChecked() UpdateDisplay() end)
 
+    -- ========== SEÇÃO ADICIONAR MOEDA/ITEM CUSTOMIZADO ==========
+    local customLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    customLabel:SetPoint("TOPLEFT", 16, -210)
+    customLabel:SetText(L:S("ADD_CUSTOM_TITLE") or "Add Custom Currency/Item")
+
+    -- ID Input
+    local idLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    idLabel:SetPoint("TOPLEFT", 20, -235)
+    idLabel:SetText((L:S("ID") or "ID") .. ":")
+    
+    local idInput = CreateFrame("EditBox", nil, panel, "InputBoxTemplate")
+    idInput:SetPoint("TOPLEFT", 45, -235)
+    idInput:SetSize(80, 24)
+    idInput:SetAutoFocus(false)
+    idInput:SetMaxLetters(10)
+    idInput:SetText("")
+
+    -- Category Dropdown
+    local catLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    catLabel:SetPoint("TOPLEFT", 140, -235)
+    catLabel:SetText((L:S("CATEGORY") or "Category") .. ":")
+    
+    local catDropdown = CreateFrame("Frame", "MC_CategoryDropdown", panel, "UIDropDownMenuTemplate")
+    catDropdown:SetPoint("TOPLEFT", 195, -230)
+    UIDropDownMenu_SetWidth(catDropdown, 140)
+    
+    local function InitializeCategoryDropdown(frame, level)
+        local categoriesList = GetCategoryList()
+        for _, catName in ipairs(categoriesList) do
+            local info = UIDropDownMenu_CreateInfo()
+            info.text = catName
+            info.value = catName
+            info.func = function(self)
+                UIDropDownMenu_SetSelectedValue(catDropdown, self.value)
+                UIDropDownMenu_SetText(catDropdown, self.value)
+            end
+            info.checked = (UIDropDownMenu_GetSelectedValue(catDropdown) == catName)
+            UIDropDownMenu_AddButton(info, level)
+        end
+    end
+    
+    UIDropDownMenu_Initialize(catDropdown, InitializeCategoryDropdown)
+    local initialCats = GetCategoryList()
+    if #initialCats > 0 then
+        UIDropDownMenu_SetSelectedValue(catDropdown, initialCats[1])
+        UIDropDownMenu_SetText(catDropdown, initialCats[1])
+    else
+        UIDropDownMenu_SetText(catDropdown, L:S("CATEGORY") or "Category")
+    end
+
+    -- Type Dropdown
+    local typeLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    typeLabel:SetPoint("TOPLEFT", 370, -235)
+    typeLabel:SetText((L:S("TYPE") or "Type") .. ":")
+    
+    local typeDropdown = CreateFrame("Frame", "MC_TypeDropdown", panel, "UIDropDownMenuTemplate")
+    typeDropdown:SetPoint("TOPLEFT", 410, -230)
+    UIDropDownMenu_SetWidth(typeDropdown, 90)
+    
+    local function InitializeTypeDropdown(frame, level)
+        local info = UIDropDownMenu_CreateInfo()
+        info.text = L:S("TYPE_ITEM") or "Item"
+        info.value = "item"
+        info.func = function(self)
+            UIDropDownMenu_SetSelectedValue(typeDropdown, self.value)
+            UIDropDownMenu_SetText(typeDropdown, info.text)
+        end
+        info.checked = (UIDropDownMenu_GetSelectedValue(typeDropdown) == "item")
+        UIDropDownMenu_AddButton(info, level)
+        
+        info = UIDropDownMenu_CreateInfo()
+        info.text = L:S("TYPE_CURRENCY") or "Currency"
+        info.value = "currency"
+        info.func = function(self)
+            UIDropDownMenu_SetSelectedValue(typeDropdown, self.value)
+            UIDropDownMenu_SetText(typeDropdown, info.text)
+        end
+        info.checked = (UIDropDownMenu_GetSelectedValue(typeDropdown) == "currency")
+        UIDropDownMenu_AddButton(info, level)
+    end
+    
+    UIDropDownMenu_Initialize(typeDropdown, InitializeTypeDropdown)
+    UIDropDownMenu_SetSelectedValue(typeDropdown, "item")
+    UIDropDownMenu_SetText(typeDropdown, L:S("TYPE_ITEM") or "Item")
+
+    -- Add Button
+    local addButton = CreateFrame("Button", nil, panel, "GameMenuButtonTemplate")
+    addButton:SetPoint("TOPLEFT", 520, -233)
+    addButton:SetSize(80, 26)
+    addButton:SetText(L:S("BTN_ADD") or "Add")
+    addButton:SetScript("OnClick", function()
+        local id = tonumber(idInput:GetText())
+        local cat = UIDropDownMenu_GetSelectedValue(catDropdown)
+        local itemType = UIDropDownMenu_GetSelectedValue(typeDropdown) or "item"
+        
+        if not id or id <= 0 then
+            print("|cFFFF0000" .. (L:S("ERROR_INVALID_ID") or "Error: Invalid ID") .. "|r")
+            return
+        end
+        if not cat or cat == "" then
+            print("|cFFFF0000" .. (L:S("ERROR_CATEGORY_REQUIRED") or "Error: Category required") .. "|r")
+            return
+        end
+        
+        -- Verifica se já existe
+        for _, item in ipairs(MyCurrenciesDB.customItems) do
+            if item.id == id then
+                print("|cFFFF0000" .. (L:S("ERROR_ID_EXISTS") or "Error: This ID already exists") .. "|r")
+                return
+            end
+        end
+        
+        -- Obter nome da moeda/item
+        local name = L:S("CUSTOM") or "Custom"
+        if itemType == "currency" then
+            local info = C_CurrencyInfo.GetBasicCurrencyInfo(id)
+            if info then name = info.name end
+        else
+            local itemName = C_Item.GetItemInfo(id)
+            if itemName then name = itemName end
+        end
+        
+        -- Adiciona
+        table.insert(MyCurrenciesDB.customItems, {
+            id = id,
+            cat = cat,
+            type = itemType,
+            name = name
+        })
+        
+        LoadGameCurrencies()
+        UpdateLocalizedNames()
+        UpdateOptionsList()
+        UpdateDisplay()
+        print("|cFF00FF00" .. (L:S("ADDED") or "Added:") .. " " .. name .. "|r")
+        
+        -- Limpa inputs
+        idInput:SetText("")
+    end)
+
+    -- Search Box
+    local searchBox = CreateFrame("EditBox", "MC_SearchBox", panel, "SearchBoxTemplate")
+    searchBox:SetPoint("TOPLEFT", 20, -270)
+    searchBox:SetSize(200, 20)
+    searchBox:SetAutoFocus(false)
+    if searchBox.Instructions then
+        searchBox.Instructions:SetText(L:S("SEARCH") or "Search...")
+    end
+    searchBox:SetScript("OnTextChanged", function(self)
+        if SearchBoxTemplate_OnTextChanged then
+            SearchBoxTemplate_OnTextChanged(self)
+        end
+        UpdateOptionsList(self:GetText())
+    end)
+
     local scrollFrame = CreateFrame("ScrollFrame", "MC_ScrollFrame", panel, "UIPanelScrollFrameTemplate")
-    scrollFrame:SetPoint("TOPLEFT", 20, -225)
+    scrollFrame:SetPoint("TOPLEFT", 20, -275)
+    scrollFrame:SetPoint("TOPLEFT", 20, -300)
     scrollFrame:SetPoint("BOTTOMRIGHT", -30, 20)
     
-    local scrollChild = CreateFrame("Frame")
+    scrollChild = CreateFrame("Frame")
     scrollFrame:SetScrollChild(scrollChild)
     scrollChild:SetSize(panel:GetWidth()-50, 2000)
 
@@ -537,43 +786,8 @@ local function CreateOptionsPanel()
         UpdateDisplay()
     end)
 
-    local yOffset = -30
-    local lastCategory = ""
-    for i, data in ipairs(trackedData) do
-        if data.cat ~= lastCategory then
-            yOffset = yOffset - 10
-            local catHeaderCB = CreateFrame("CheckButton", nil, scrollChild, "UICheckButtonTemplate")
-            catHeaderCB:SetPoint("TOPLEFT", 0, yOffset)
-            catHeaderCB.text:SetText("|cFFFFD100" .. data.cat .. "|r")
-            catHeaderCB:SetChecked(true)
-            
-            local targetCat = data.cat
-            catHeaderCB:SetScript("OnClick", function(self)
-                local state = self:GetChecked()
-                for k, v in ipairs(trackedData) do
-                    if v.cat == targetCat then
-                        MyCurrenciesDB.visibility[v.id] = state
-                        if optionCheckboxes[k] then optionCheckboxes[k]:SetChecked(state) end
-                    end
-                end
-                UpdateDisplay()
-            end)
-            yOffset = yOffset - 25
-            lastCategory = data.cat
-        end
-    
-        local cb = CreateFrame("CheckButton", nil, scrollChild, "UICheckButtonTemplate")
-        cb:SetPoint("TOPLEFT", 20, yOffset)
-        cb.text:SetText(data.name)
-        optionCheckboxes[i] = cb
-        
-        if MyCurrenciesDB.visibility[data.id] == nil then cb:SetChecked(true)
-        else cb:SetChecked(MyCurrenciesDB.visibility[data.id]) end
-        
-        cb:SetScript("OnClick", function(self) MyCurrenciesDB.visibility[data.id] = self:GetChecked() UpdateDisplay() end)
-        yOffset = yOffset - 25
-    end
-    scrollChild:SetHeight(math.abs(yOffset) + 20)
+    -- Inicializa a lista de opções
+    UpdateOptionsList()
 
     if Settings and Settings.RegisterCanvasLayoutCategory then
         local category = Settings.RegisterCanvasLayoutCategory(panel, "My Currencies")

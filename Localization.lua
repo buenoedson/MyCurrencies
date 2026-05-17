@@ -82,6 +82,23 @@ local translations = {
         HIDDEN_CURRENCY = "Moeda oculta",
         ITEMS = "Itens",
         ANCIENT_ITEMS = "Itens - Antigos",
+        
+        -- Custom items
+        ADD_CUSTOM_TITLE = "Adicionar Moeda/Item Customizado",
+        ID = "ID",
+        CATEGORY = "Categoria",
+        TYPE = "Tipo",
+        TYPE_ITEM = "Item",
+        TYPE_CURRENCY = "Moeda",
+        BTN_ADD = "Adicionar",
+        BTN_CLEAR_CUSTOM = "Limpar Itens Customizados",
+        CUSTOM = "Customizado",
+        ERROR_INVALID_ID = "Erro: ID inválido",
+        ERROR_CATEGORY_REQUIRED = "Erro: Categoria obrigatória",
+        ERROR_ID_EXISTS = "Erro: Este ID já existe",
+        ADDED = "Adicionado:",
+        CLEARED_ALL = "Todos os itens customizados foram limpos",
+        RELOAD_REQUIRED = "Recarregue a interface (/reload) para aplicar o idioma.",
     },
     
     -- ENGLISH (EN-US)
@@ -111,6 +128,22 @@ local translations = {
         HIDDEN_CURRENCY = "Hidden Currency",
         ITEMS = "Items",
         ANCIENT_ITEMS = "Items - Ancient",
+        
+        ADD_CUSTOM_TITLE = "Add Custom Currency/Item",
+        ID = "ID",
+        CATEGORY = "Category",
+        TYPE = "Type",
+        TYPE_ITEM = "Item",
+        TYPE_CURRENCY = "Currency",
+        BTN_ADD = "Add",
+        BTN_CLEAR_CUSTOM = "Clear Custom Items",
+        CUSTOM = "Custom",
+        ERROR_INVALID_ID = "Error: Invalid ID",
+        ERROR_CATEGORY_REQUIRED = "Error: Category required",
+        ERROR_ID_EXISTS = "Error: This ID already exists",
+        ADDED = "Added:",
+        CLEARED_ALL = "Cleared all custom items",
+        RELOAD_REQUIRED = "Reload UI (/reload) to apply language changes.",
     },
     
     -- ESPAÑOL (ES-ES)
@@ -140,6 +173,22 @@ local translations = {
         HIDDEN_CURRENCY = "Moneda Oculta",
         ITEMS = "Objetos",
         ANCIENT_ITEMS = "Objetos - Antiguos",
+        
+        ADD_CUSTOM_TITLE = "Añadir Moneda/Objeto Personalizado",
+        ID = "ID",
+        CATEGORY = "Categoría",
+        TYPE = "Tipo",
+        TYPE_ITEM = "Objeto",
+        TYPE_CURRENCY = "Moneda",
+        BTN_ADD = "Añadir",
+        BTN_CLEAR_CUSTOM = "Borrar Objetos Personalizados",
+        CUSTOM = "Personalizado",
+        ERROR_INVALID_ID = "Error: ID no válido",
+        ERROR_CATEGORY_REQUIRED = "Error: Categoría requerida",
+        ERROR_ID_EXISTS = "Error: Este ID ya existe",
+        ADDED = "Añadido:",
+        CLEARED_ALL = "Se borraron todos los objetos personalizados",
+        RELOAD_REQUIRED = "Recarga la interfaz (/reload) para aplicar el idioma.",
     },
     
     -- FRANÇAIS (FR-FR)
@@ -169,6 +218,7 @@ local translations = {
         HIDDEN_CURRENCY = "Devise Cachée",
         ITEMS = "Objets",
         ANCIENT_ITEMS = "Objets - Anciens",
+        RELOAD_REQUIRED = "Rechargez l'interface (/reload) pour appliquer la langue.",
     },
     
     -- DEUTSCH (DE-DE)
@@ -198,6 +248,7 @@ local translations = {
         HIDDEN_CURRENCY = "Versteckte Währung",
         ITEMS = "Gegenstände",
         ANCIENT_ITEMS = "Gegenstände - Antik",
+        RELOAD_REQUIRED = "Benutzeroberfläche neu laden (/reload), um die Sprache anzuwenden.",
     },
     
     -- ITALIANO (IT-IT)
@@ -227,6 +278,7 @@ local translations = {
         HIDDEN_CURRENCY = "Valuta Nascosta",
         ITEMS = "Oggetti",
         ANCIENT_ITEMS = "Oggetti - Antichi",
+        RELOAD_REQUIRED = "Ricarica l'interfaccia (/reload) per applicare la lingua.",
     },
     
     -- РУССКИЙ (RU-RU)
@@ -256,6 +308,7 @@ local translations = {
         HIDDEN_CURRENCY = "Скрытая Валюта",
         ITEMS = "Предметы",
         ANCIENT_ITEMS = "Предметы - Древние",
+        RELOAD_REQUIRED = "Перезагрузите интерфейс (/reload) для применения языка.",
     },
     
     -- 简体中文 (ZH-CN)
@@ -285,6 +338,7 @@ local translations = {
         HIDDEN_CURRENCY = "隐藏货币",
         ITEMS = "物品",
         ANCIENT_ITEMS = "物品 - 古代",
+        RELOAD_REQUIRED = "重载界面 (/reload) 以应用语言更改。",
     },
     
     -- 繁體中文 (ZH-TW)
@@ -314,6 +368,7 @@ local translations = {
         HIDDEN_CURRENCY = "隱藏貨幣",
         ITEMS = "物品",
         ANCIENT_ITEMS = "物品 - 古代",
+        RELOAD_REQUIRED = "重載介面 (/reload) 以套用語言變更。",
     },
     
     -- 한국어 (KO-KR)
@@ -343,6 +398,7 @@ local translations = {
         HIDDEN_CURRENCY = "숨겨진 화폐",
         ITEMS = "아이템",
         ANCIENT_ITEMS = "아이템 - 고대",
+        RELOAD_REQUIRED = "언어 변경을 적용하려면 UI를 다시 로드(/reload)하세요.",
     },
 }
 

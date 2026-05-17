@@ -7,4 +7,5 @@
 ## IconTexture: Interface\Icons\INV_Misc_Coin_01
 
 Localization.lua
+MapData.lua
 MyCurrencies.lua
