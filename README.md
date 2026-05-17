@@ -1,32 +1,32 @@
 # My Currencies Tracker
 
-[🇧🇷 Português](#português) | [🇺🇸 English](#english) | [🇪🇸 Español](#español) | [🇫🇷 Français](#français) | [🇩🇪 Deutsch](#deutsch) | [🇮🇹 Italiano](#italiano) | [🇷🇺 Русский](#русский) | [🇨🇳 中文](#中文简体) | [🇹🇼 繁體中文](#中文繁体) | [🇰🇷 한국어](#한국어)
+[🇸 English](#english) | [🇧🇷 Português](#português) | [🇪🇸 Español](#español) | [🇫🇷 Français](#français) | [🇩🇪 Deutsch](#deutsch) | [🇮🇹 Italiano](#italiano) | [🇷🇺 Русский](#русский) | [🇨🇳 中文](#中文简体) | [🇹🇼 繁體中文](#中文繁体) | [🇰🇷 한국어](#한국어)
 
-Um addon simples para **World of Warcraft** que monitora suas moedas e itens de todas as expansões. **Agora em 10 idiomas!**
-
----
-
-## 🌍 Características
-
-- 💰 Rastreamento de moedas por expansão
-- 📦 Itens colecionáveis e hidden currencies
-- 🎨 Personalizável (tamanho, posição, colunas)
-- 🌐 **10 idiomas**: PT, EN, ES, FR, DE, IT, RU, ZH-CN, ZH-TW, KO
-- 🔄 Detecção automática do idioma
-- 📍 Posição salva automaticamente
+A simple addon for **World of Warcraft** that monitors your currencies and items from all expansions. **Now in 10 languages!**
 
 ---
 
-## 🚀 Instalação
+## 🌍 Features
 
-1. Baixe a pasta `MyCurrencies`
-2. Extraia para: `World of Warcraft\_retail_\Interface\AddOns\`
-3. Execute `/reload` no jogo
-4. Abra com `/mycurrencies` ou `/mc`
+- 💰 Currency tracking by expansion
+- 📦 Collectible items and hidden currencies
+- 🎨 Customizable (size, position, columns)
+- 🌐 **10 languages**: EN, PT, ES, FR, DE, IT, RU, ZH-CN, ZH-TW, KO
+- 🔄 Automatic language detection
+- 📍 Position saved automatically
 
 ---
 
-## ⚙️ Comandos
+## 🚀 Installation
+
+1. Download the `MyCurrencies` folder
+2. Extract to: `World of Warcraft\_retail_\Interface\AddOns\`
+3. Run `/reload` in game
+4. Open with `/mycurrencies` or `/mc`
+
+---
+
+## ⚙️ Commands
 
 ```
 /mycurrencies       Abre o painel
