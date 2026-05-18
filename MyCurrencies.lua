@@ -30,60 +30,6 @@ local function GetCurrentExpansionCategory()
     return "The War Within" 
 end
 
--- ============================================================================
--- LISTA MANUAL (Apenas ITENS e Moedas Ocultas)
--- ============================================================================
-local manualData = {
-
-	-- ITENS E MOEDAS OCULTAS - MIDNIGHT
-    { cat = "Midnight - Moeda oculta", type = 'currency', id = 3378, name = "Dawnlight Manaflux" },
-    { cat = "Midnight - Itens", type = 'item', id = 246951, name = "Stormarion Core" },
-    -- The War Within - Itens
-    { cat = "The War Within - Itens", type = 'item', id = 210814, name = "Artisan's Acuity" },
-    { cat = "The War Within - Itens", type = 'item', id = 245653, name = "Coffer Key Shard", threshold = 100 }, 
-    { cat = "The War Within - Itens", type = 'item', id = 234741, name = "Miscellaneous Mechanica" },
-    { cat = "The War Within - Itens", type = 'item', id = 212493, name = "Odd Glob of Wax" },
-    { cat = "The War Within - Itens", type = 'item', id = 206350, name = "Radiant Remnant" },
-    { cat = "The War Within - Itens", type = 'item', id = 225557, name = "Sizzling Cinderpollen" },
-    { cat = "The War Within - Moeda oculta", type = 'currency', id = 3269, name = "Ethereal Voidsplinter" },
-    
-    -- Dragonflight - Itens
-    { cat = "Dragonflight - Itens", type = 'item', id = 204988, name = "Barter Brick" },
-    { cat = "Dragonflight - Itens", type = 'item', id = 205984, name = "Barter Boulder" },
-    { cat = "Dragonflight - Itens", type = 'item', id = 199198, name = "Centaur Hunting Trophy" },
-    { cat = "Dragonflight - Itens", type = 'item', id = 202058, name = "Copper Coin of the Isles" },
-    { cat = "Dragonflight - Itens", type = 'item', id = 202102, name = "Coveted Bauble" },
-    { cat = "Dragonflight - Itens", type = 'item', id = 204726, name = "Dormant Primordial Fragment" },
-    { cat = "Dragonflight - Itens", type = 'item', id = 190453, name = "Dragon Isles Artifact" },
-    { cat = "Dragonflight - Itens", type = 'item', id = 208151, name = "Dreamsurge Coalescence" },
-    { cat = "Dragonflight - Itens", type = 'item', id = 205246, name = "Essence of The Storm" },
-    { cat = "Dragonflight - Itens", type = 'item', id = 208066, name = "Gigantic Dreamseed" },
-    { cat = "Dragonflight - Itens", type = 'item', id = 202059, name = "Gold Coin of the Isles" },
-    { cat = "Dragonflight - Itens", type = 'item', id = 191264, name = "Greater Obsidian Key" },
-    { cat = "Dragonflight - Itens", type = 'item', id = 193201, name = "Key Fragments" },
-    { cat = "Dragonflight - Itens", type = 'item', id = 191251, name = "Key Framing" },
-    { cat = "Dragonflight - Itens", type = 'item', id = 190330, name = "Mark of Sargha" },
-    { cat = "Dragonflight - Itens", type = 'item', id = 199066, name = "Magmote" },
-    { cat = "Dragonflight - Itens", type = 'item', id = 208067, name = "Plump Dreamseed" },
-    { cat = "Dragonflight - Itens", type = 'item', id = 191263, name = "Restored Obsidian Key" },
-    { cat = "Dragonflight - Itens", type = 'item', id = 199906, name = "Sacred Tuskarr Totem" },
-    { cat = "Dragonflight - Itens", type = 'item', id = 190328, name = "Sargha's Signet" },
-    { cat = "Dragonflight - Itens", type = 'item', id = 210986, name = "Seedbloom" },
-    { cat = "Dragonflight - Itens", type = 'item', id = 202060, name = "Silver Coin of the Isles" },
-    { cat = "Dragonflight - Itens", type = 'item', id = 208047, name = "Small Dreamseed" },
-    { cat = "Dragonflight - Itens", type = 'item', id = 199905, name = "Titan Relic" },
-    { cat = "Dragonflight - Itens", type = 'item', id = 202196, name = "Unearthed Fragrant Coin" },
-    { cat = "Dragonflight - Itens", type = 'item', id = 203422, name = "Zskera Vault Key" },
-
-    -- ITENS - SHADOWLANDS E ANTIGOS
-    { cat = "Antigos - Itens", type = 'item', id = 187440, name = "Attendant's Token of Merit" },
-    { cat = "Antigos - Itens", type = 'item', id = 188657, name = "Genesis Mote" },
-    { cat = "Antigos - Itens", type = 'item', id = 188959, name = "Sandworn Relic" },
-    { cat = "Antigos - Itens", type = 'item', id = 21100, name = "Coin of Ancestry" },
-    { cat = "Antigos - Itens", type = 'item', id = 116035, name = "Darkmoon Game Token" },
-    { cat = "Antigos - Itens", type = 'item', id = 49927, name = "Love Token" }
-}
-
 local trackedData = {}
 
 -- ============================================================================
@@ -113,6 +59,57 @@ local function LoadGameCurrencies()
     local finalData = {}
     local foundIDs = {}
     
+    local manualData = {
+        -- ITENS E MOEDAS OCULTAS - MIDNIGHT
+        { cat = L:S("MIDNIGHT") .. " - " .. L:S("HIDDEN_CURRENCY"), type = 'currency', id = 3378, name = "Dawnlight Manaflux" },
+        { cat = L:S("MIDNIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 246951, name = "Stormarion Core" },
+        
+        -- The War Within - Itens
+        { cat = L:S("THE_WAR_WITHIN") .. " - " .. L:S("ITEMS"), type = 'item', id = 210814, name = "Artisan's Acuity" },
+        { cat = L:S("THE_WAR_WITHIN") .. " - " .. L:S("ITEMS"), type = 'item', id = 245653, name = "Coffer Key Shard", threshold = 100 }, 
+        { cat = L:S("THE_WAR_WITHIN") .. " - " .. L:S("ITEMS"), type = 'item', id = 234741, name = "Miscellaneous Mechanica" },
+        { cat = L:S("THE_WAR_WITHIN") .. " - " .. L:S("ITEMS"), type = 'item', id = 212493, name = "Odd Glob of Wax" },
+        { cat = L:S("THE_WAR_WITHIN") .. " - " .. L:S("ITEMS"), type = 'item', id = 206350, name = "Radiant Remnant" },
+        { cat = L:S("THE_WAR_WITHIN") .. " - " .. L:S("ITEMS"), type = 'item', id = 225557, name = "Sizzling Cinderpollen" },
+        { cat = L:S("THE_WAR_WITHIN") .. " - " .. L:S("HIDDEN_CURRENCY"), type = 'currency', id = 3269, name = "Ethereal Voidsplinter" },
+        
+        -- Dragonflight - Itens
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 204988, name = "Barter Brick" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 205984, name = "Barter Boulder" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 199198, name = "Centaur Hunting Trophy" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 202058, name = "Copper Coin of the Isles" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 202102, name = "Coveted Bauble" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 204726, name = "Dormant Primordial Fragment" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 190453, name = "Dragon Isles Artifact" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 208151, name = "Dreamsurge Coalescence" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 205246, name = "Essence of The Storm" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 208066, name = "Gigantic Dreamseed" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 202059, name = "Gold Coin of the Isles" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 191264, name = "Greater Obsidian Key" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 193201, name = "Key Fragments" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 191251, name = "Key Framing" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 190330, name = "Mark of Sargha" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 199066, name = "Magmote" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 208067, name = "Plump Dreamseed" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 191263, name = "Restored Obsidian Key" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 199906, name = "Sacred Tuskarr Totem" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 190328, name = "Sargha's Signet" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 210986, name = "Seedbloom" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 202060, name = "Silver Coin of the Isles" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 208047, name = "Small Dreamseed" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 199905, name = "Titan Relic" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 202196, name = "Unearthed Fragrant Coin" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 203422, name = "Zskera Vault Key" },
+
+        -- ITENS - SHADOWLANDS E ANTIGOS
+        { cat = L:S("ANCIENT_ITEMS"), type = 'item', id = 187440, name = "Attendant's Token of Merit" },
+        { cat = L:S("ANCIENT_ITEMS"), type = 'item', id = 188657, name = "Genesis Mote" },
+        { cat = L:S("ANCIENT_ITEMS"), type = 'item', id = 188959, name = "Sandworn Relic" },
+        { cat = L:S("ANCIENT_ITEMS"), type = 'item', id = 21100, name = "Coin of Ancestry" },
+        { cat = L:S("ANCIENT_ITEMS"), type = 'item', id = 116035, name = "Darkmoon Game Token" },
+        { cat = L:S("ANCIENT_ITEMS"), type = 'item', id = 49927, name = "Love Token" }
+    }
+
     for _, mData in ipairs(manualData) do
         table.insert(finalData, {
             cat = mData.cat,
@@ -345,7 +342,7 @@ local function UpdateDisplay()
             local catL = string.lower(data.cat)
             -- Atualizado para nunca esconder masmorras/raides/miscellaneous
             local isMisc = string.find(catL, "miscellaneous") or string.find(catL, "diversos") 
-                        or string.find(catL, "antigos") or string.find(catL, "player vs. player") 
+                        or string.find(catL, "antigos") or string.find(catL, string.lower(L:S("ANCIENT_ITEMS") or "")) or string.find(catL, "player vs. player") 
                         or string.find(catL, "jogador") or string.find(catL, "dungeon") 
                         or string.find(catL, "masmorra") or string.find(catL, "raid")
             
