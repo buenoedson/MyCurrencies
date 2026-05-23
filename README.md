@@ -407,6 +407,6 @@ Un addon semplice e pratico per **World of Warcraft** che monitora le tue valute
 
 ---
 
-**Versão Atual**: 1.0  
+**Versão Atual**: 2026.05.18.2  
 **Compatibilidade**: WoW Retail 12.0+  
 **Última Atualização**: Maio de 2026

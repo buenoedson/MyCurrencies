@@ -578,21 +578,69 @@ local function CreateOptionsPanel()
     sliderIcon:SetPoint("TOPLEFT", 20, -120)
     sliderIcon:SetMinMaxValues(16, 64)
     sliderIcon:SetValueStep(2)
+    sliderIcon:SetObeyStepOnDrag(true)
     sliderIcon:SetValue(MyCurrenciesDB.iconSize)
     _G[sliderIcon:GetName() .. "Low"]:SetText("16")
     _G[sliderIcon:GetName() .. "High"]:SetText("64")
     _G[sliderIcon:GetName() .. "Text"]:SetText(L:S("ICON_SIZE"))
-    sliderIcon:SetScript("OnValueChanged", function(self, value) MyCurrenciesDB.iconSize = value UpdateDisplay() end)
+    
+    local inputIcon = CreateFrame("EditBox", "MC_IconSizeInput", panel, "InputBoxTemplate")
+    inputIcon:SetPoint("LEFT", sliderIcon, "RIGHT", 15, 0)
+    inputIcon:SetSize(40, 20)
+    inputIcon:SetAutoFocus(false)
+    inputIcon:SetNumeric(true)
+    inputIcon:SetText(math.floor(MyCurrenciesDB.iconSize))
+    inputIcon:SetScript("OnEnterPressed", function(self)
+        local val = tonumber(self:GetText()) or 32
+        if val < 16 then val = 16 elseif val > 64 then val = 64 end
+        self:SetText(math.floor(val))
+        sliderIcon:SetValue(val)
+        self:ClearFocus()
+    end)
+    inputIcon:SetScript("OnEscapePressed", function(self)
+        self:SetText(math.floor(sliderIcon:GetValue()))
+        self:ClearFocus()
+    end)
+    
+    sliderIcon:SetScript("OnValueChanged", function(self, value) 
+        MyCurrenciesDB.iconSize = value 
+        inputIcon:SetText(math.floor(value))
+        UpdateDisplay() 
+    end)
 
     local sliderText = CreateFrame("Slider", "MC_TextSizeSlider", panel, "OptionsSliderTemplate")
-    sliderText:SetPoint("TOPLEFT", 200, -120)
+    sliderText:SetPoint("TOPLEFT", 250, -120)
     sliderText:SetMinMaxValues(8, 24)
     sliderText:SetValueStep(1)
+    sliderText:SetObeyStepOnDrag(true)
     sliderText:SetValue(MyCurrenciesDB.textSize)
     _G[sliderText:GetName() .. "Low"]:SetText("8")
     _G[sliderText:GetName() .. "High"]:SetText("24")
     _G[sliderText:GetName() .. "Text"]:SetText(L:S("TEXT_SIZE"))
-    sliderText:SetScript("OnValueChanged", function(self, value) MyCurrenciesDB.textSize = value UpdateDisplay() end)
+    
+    local inputText = CreateFrame("EditBox", "MC_TextSizeInput", panel, "InputBoxTemplate")
+    inputText:SetPoint("LEFT", sliderText, "RIGHT", 15, 0)
+    inputText:SetSize(40, 20)
+    inputText:SetAutoFocus(false)
+    inputText:SetNumeric(true)
+    inputText:SetText(math.floor(MyCurrenciesDB.textSize))
+    inputText:SetScript("OnEnterPressed", function(self)
+        local val = tonumber(self:GetText()) or 12
+        if val < 8 then val = 8 elseif val > 24 then val = 24 end
+        self:SetText(math.floor(val))
+        sliderText:SetValue(val)
+        self:ClearFocus()
+    end)
+    inputText:SetScript("OnEscapePressed", function(self)
+        self:SetText(math.floor(sliderText:GetValue()))
+        self:ClearFocus()
+    end)
+    
+    sliderText:SetScript("OnValueChanged", function(self, value) 
+        MyCurrenciesDB.textSize = value 
+        inputText:SetText(math.floor(value))
+        UpdateDisplay() 
+    end)
     
     local cbRest = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
     cbRest:SetPoint("TOPLEFT", 20, -160)
@@ -620,7 +668,7 @@ local function CreateOptionsPanel()
     idInput:SetPoint("TOPLEFT", 45, -235)
     idInput:SetSize(80, 24)
     idInput:SetAutoFocus(false)
-    idInput:SetMaxLetters(10)
+    idInput:SetMaxLetters(50)
     idInput:SetText("")
 
     -- Category Dropdown
@@ -690,6 +738,134 @@ local function CreateOptionsPanel()
     UIDropDownMenu_Initialize(typeDropdown, InitializeTypeDropdown)
     UIDropDownMenu_SetSelectedValue(typeDropdown, "item")
     UIDropDownMenu_SetText(typeDropdown, L:S("TYPE_ITEM") or "Item")
+
+    -- ==========================================================
+    -- AUTOCOMPLETAR / BUSCAR ITENS DA MOCHILA
+    -- ==========================================================
+    local suggestFrame = CreateFrame("Frame", "MC_ItemSuggestFrame", panel, "BackdropTemplate")
+    suggestFrame:SetPoint("TOPLEFT", idInput, "BOTTOMLEFT", 0, 0)
+    suggestFrame:SetSize(220, 100)
+    suggestFrame:SetBackdrop({
+        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true, tileSize = 16, edgeSize = 16,
+        insets = { left = 4, right = 4, top = 4, bottom = 4 }
+    })
+    suggestFrame:SetBackdropColor(0, 0, 0, 0.9)
+    suggestFrame:SetFrameLevel(100)
+    suggestFrame:Hide()
+
+    local suggestButtons = {}
+    for i = 1, 5 do
+        local btn = CreateFrame("Button", nil, suggestFrame)
+        btn:SetSize(210, 20)
+        if i == 1 then
+            btn:SetPoint("TOPLEFT", 5, -5)
+        else
+            btn:SetPoint("TOPLEFT", suggestButtons[i-1], "BOTTOMLEFT", 0, 0)
+        end
+        btn.text = btn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        btn.text:SetPoint("LEFT", 20, 0)
+        btn.text:SetPoint("RIGHT", -5, 0)
+        btn.text:SetJustifyH("LEFT")
+        
+        btn.icon = btn:CreateTexture(nil, "ARTWORK")
+        btn.icon:SetSize(16, 16)
+        btn.icon:SetPoint("LEFT", 2, 0)
+        
+        btn:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight")
+        
+        btn:SetScript("OnClick", function(self)
+            if self.itemID then
+                idInput:SetText(tostring(self.itemID))
+                suggestFrame:Hide()
+                idInput:ClearFocus()
+                -- Já altera o tipo para Item automaticamente
+                UIDropDownMenu_SetSelectedValue(typeDropdown, "item")
+                UIDropDownMenu_SetText(typeDropdown, L:S("TYPE_ITEM") or "Item")
+                
+                -- Detecta a expansão automaticamente
+                local expacID = select(15, C_Item.GetItemInfo(self.itemID))
+                if expacID then
+                    local expacName = ""
+                    if expacID == 1 then expacName = L:S("BURNING_CRUSADE") or "Burning Crusade"
+                    elseif expacID == 2 then expacName = L:S("WRATH_OF_LICH_KING") or "Wrath of the Lich King"
+                    elseif expacID == 3 then expacName = "Cataclysm"
+                    elseif expacID == 4 then expacName = L:S("MISTS_OF_PANDARIA") or "Mists of Pandaria"
+                    elseif expacID == 5 then expacName = L:S("WARLORDS_OF_DRAENOR") or "Warlords of Draenor"
+                    elseif expacID == 6 then expacName = L:S("LEGION") or "Legion"
+                    elseif expacID == 7 then expacName = L:S("BATTLE_FOR_AZEROTH") or "Battle for Azeroth"
+                    elseif expacID == 8 then expacName = L:S("SHADOWLANDS") or "Shadowlands"
+                    elseif expacID == 9 then expacName = L:S("DRAGONFLIGHT") or "Dragonflight"
+                    elseif expacID == 10 then expacName = L:S("THE_WAR_WITHIN") or "The War Within"
+                    elseif expacID == 11 then expacName = L:S("MIDNIGHT") or "Midnight"
+                    end
+                    
+                    local catStr = expacName ~= "" and (expacName .. " - " .. (L:S("ITEMS") or "Items")) or (L:S("ANCIENT_ITEMS") or "Items - Ancient")
+                    
+                    -- Atualiza o dropdown da Categoria com a expansão detectada
+                    UIDropDownMenu_SetSelectedValue(catDropdown, catStr)
+                    UIDropDownMenu_SetText(catDropdown, catStr)
+                end
+            end
+        end)
+        suggestButtons[i] = btn
+    end
+
+    local function UpdateSuggestions(text)
+        -- Ignora se for menor que 3 letras ou se o usuário já estiver digitando um ID numérico
+        if not text or string.len(text) < 3 or tonumber(text) then
+            suggestFrame:Hide()
+            return
+        end
+        
+        text = string.lower(text)
+        local results = {}
+        local foundIDs = {}
+        
+        -- Vasculha as mochilas de 0 a 4 (Bags principais)
+        for bag = 0, NUM_BAG_SLOTS do
+            for slot = 1, C_Container.GetContainerNumSlots(bag) do
+                local info = C_Container.GetContainerItemInfo(bag, slot)
+                if info and info.itemID and info.itemName then
+                    if not foundIDs[info.itemID] and string.find(string.lower(info.itemName), text, 1, true) then
+                        table.insert(results, {id = info.itemID, name = info.itemName, icon = info.iconFileID})
+                        foundIDs[info.itemID] = true
+                        if #results >= 5 then break end
+                    end
+                end
+            end
+            if #results >= 5 then break end
+        end
+        
+        if #results > 0 then
+            suggestFrame:Show()
+            local height = 10
+            for i = 1, 5 do
+                if results[i] then
+                    suggestButtons[i]:Show()
+                    suggestButtons[i].text:SetText(results[i].name)
+                    suggestButtons[i].icon:SetTexture(results[i].icon)
+                    suggestButtons[i].itemID = results[i].id
+                    height = height + 20
+                else
+                    suggestButtons[i]:Hide()
+                end
+            end
+            suggestFrame:SetHeight(height)
+        else
+            suggestFrame:Hide()
+        end
+    end
+
+    idInput:SetScript("OnTextChanged", function(self, userInput)
+        if userInput then UpdateSuggestions(self:GetText()) end
+    end)
+
+    -- Esconde as sugestões caso clique fora (usando um pequeno atraso para dar tempo de clicar no botão)
+    idInput:SetScript("OnEditFocusLost", function(self)
+        C_Timer.After(0.2, function() if suggestFrame then suggestFrame:Hide() end end)
+    end)
 
     -- Add Button
     local addButton = CreateFrame("Button", nil, panel, "GameMenuButtonTemplate")
@@ -848,7 +1024,20 @@ end)
 SLASH_MYCURRENCIES1 = "/mycur"
 SLASH_MYCURRENCIES2 = "/mc"
 SLASH_MYCURRENCIES3 = "/myc"
-SlashCmdList["MYCURRENCIES"] = function()
+SlashCmdList["MYCURRENCIES"] = function(msg)
+    msg = msg and strtrim(string.lower(msg)) or ""
+    
+    if msg == "reset" then
+        if MyCurrenciesDB then MyCurrenciesDB.position = nil end
+        f:ClearAllPoints()
+        f:SetPoint("CENTER")
+        print("|cFFFFD100My Currencies:|r " .. (L:S("CMD_RESET") or "Position reset."))
+        return
+    elseif msg == "toggle" then
+        if f:IsShown() then f:Hide() else UpdateDisplay() end
+        return
+    end
+
     if Settings and Settings.OpenToCategory then
         if MyCurrenciesOptions and MyCurrenciesOptions.category then
             Settings.OpenToCategory(MyCurrenciesOptions.category:GetID())
