@@ -11,23 +11,138 @@ local defaults = {
     autoFilterRegion = false, 
     visibility = {},
     position = nil,
-    customItems = {}  -- Moedas/itens adicionados pelo usuário
+    customItems = {},       -- Moedas/itens adicionados pelo usuário
+    debugMode = false,      -- Modo desenvolvedor: exibe ID do mapa
+    debugLogUnmapped = false, -- Log automático de mapas não mapeados
 }
 
-local function GetCurrentExpansionCategory()
-    local mapID = C_Map.GetBestMapForUnit("player")
-    while mapID and mapID > 0 do
-        if ns.mapToExpansions[mapID] then
-            return ns.mapToExpansions[mapID]
-        end
-        local info = C_Map.GetMapInfo(mapID)
-        if info and info.parentMapID then
-            mapID = info.parentMapID
+-- ============================================================================
+-- MODO DEBUG / DESENVOLVEDOR
+-- ============================================================================
+local debugFrame = nil
+local function CreateDebugFrame()
+    if debugFrame then return end
+        debugFrame = CreateFrame("Frame", nil, UIParent)
+        debugFrame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 10, -200)
+        debugFrame:SetSize(300, 50)
+        debugFrame:Hide()
+        -- Torna o debugFrame arrastável, mas preso à tela
+        debugFrame:SetMovable(true)
+        debugFrame:EnableMouse(true)
+        debugFrame:SetClampedToScreen(true)
+        debugFrame:RegisterForDrag("LeftButton")
+        debugFrame:SetScript("OnDragStart", debugFrame.StartMoving)
+        debugFrame:SetScript("OnDragStop", debugFrame.StopMovingOrSizing)
+
+    debugFrame.bg = debugFrame:CreateTexture(nil, "BACKGROUND")
+    debugFrame.bg:SetAllPoints(true)
+    debugFrame.bg:SetColorTexture(0, 0, 0, 0.7)
+
+    debugFrame.text = debugFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    debugFrame.text:SetAllPoints(true)
+    debugFrame.text:SetJustifyH("LEFT")
+    debugFrame.text:SetText("")
+end
+
+local function GetMapHierarchyString(mapID)
+    if not mapID or mapID <= 0 then return "" end
+    local parts = {}
+    local current = mapID
+    local visited = {}
+    while current and current > 0 and not visited[current] do
+        visited[current] = true
+        local info = C_Map.GetMapInfo(current)
+        local name = info and info.name or "Unknown"
+        local exp = ns.mapToExpansions[current] and (" [|cFF00FF00" .. ns.mapToExpansions[current] .. "|r]") or " [|cFFFF6B6BNONE|r]"
+        table.insert(parts, 1, current .. ": " .. name .. exp)
+        if info and info.parentMapID and info.parentMapID > 0 then
+            current = info.parentMapID
         else
             break
         end
     end
-    return "The War Within" 
+    return table.concat(parts, "\n")
+end
+
+local function LogUnmappedMap(mapID)
+    if not MyCurrenciesDB or not MyCurrenciesDB.debugLogUnmapped then return end
+    if not mapID or mapID <= 0 then return end
+    -- Verifica se já foi logado nesta sessão
+    if not MyCurrenciesDB._loggedMaps then MyCurrenciesDB._loggedMaps = {} end
+    if MyCurrenciesDB._loggedMaps[mapID] then return end
+    MyCurrenciesDB._loggedMaps[mapID] = true
+
+    local info = C_Map.GetMapInfo(mapID)
+    local name = info and info.name or "Unknown"
+    local parentID = info and info.parentMapID or "N/A"
+    local parentInfo = info and info.parentMapID and C_Map.GetMapInfo(info.parentMapID)
+    local parentName = parentInfo and parentInfo.name or "N/A"
+
+    print("|cFFFFD100[My Currencies - DEBUG]|r")
+    print("  Mapa nao mapeado encontrado!")
+    print("  ID: " .. mapID .. " | Nome: " .. name)
+    print("  Pai ID: " .. tostring(parentID) .. " | Pai Nome: " .. parentName)
+    print("  Para adicionar ao MapData.lua, insira:")
+    print("  |cFF00FF00[" .. mapID .. "] = \"<EXPANSAO>\", -- " .. name .. "|r")
+end
+
+-- Verifica se está em mapa não mapeado a cada troca de zona
+local function CheckDebugOnZoneChange()
+    local mapID = C_Map.GetBestMapForUnit("player")
+    local exp = ns.GetExpansionByMapID(mapID)
+    if not exp then
+        LogUnmappedMap(mapID)
+    end
+end
+
+local function UpdateDebugDisplay()
+    if not MyCurrenciesDB or not MyCurrenciesDB.debugMode then
+        if debugFrame then debugFrame:Hide() end
+        return
+    end
+    
+    -- Cria o debug frame sob demanda se ainda não existir
+    CreateDebugFrame()
+    
+    if not debugFrame then return end
+    
+    local mapID = C_Map.GetBestMapForUnit("player")
+    local exp = ns.GetExpansionByMapID(mapID)
+    local expColor = exp and "|cFF00FF00" or "|cFFFF6B6B"
+    local expText = exp or "NAO MAPEADO!"
+    
+    local info = C_Map.GetMapInfo(mapID)
+    local mapName = info and info.name or "Unknown"
+    
+    local text = "Mapa ID: |cFF00CCFF" .. mapID .. "|r (|cFFCCCCCC" .. mapName .. "|r)\n"
+    text = text .. "Expansao: " .. expColor .. expText .. "|r"
+    
+    -- Mostra hierarquia completa no tooltip
+    debugFrame:SetScript("OnEnter", function()
+        if not MyCurrenciesDB.debugMode then return end
+        GameTooltip:SetOwner(debugFrame, "ANCHOR_RIGHT")
+        GameTooltip:AddLine("|cFFFFD100Hierarquia de Mapas:")
+        local hierarchy = GetMapHierarchyString(mapID)
+        for line in string.gmatch(hierarchy, "[^\n]+") do
+            GameTooltip:AddLine(line, 1, 1, 1, true)
+        end
+        GameTooltip:Show()
+    end)
+    debugFrame:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+    
+    debugFrame.text:SetText(text)
+    debugFrame:Show()
+    
+    -- Ajusta altura do frame debug
+    debugFrame:SetHeight(debugFrame.text:GetStringHeight() + 6)
+end
+
+local function GetCurrentExpansionCategory()
+    local mapID = C_Map.GetBestMapForUnit("player")
+    local exp = ns.GetExpansionByMapID(mapID)
+    return exp or "The War Within"
 end
 
 local trackedData = {}
@@ -411,7 +526,7 @@ local function UpdateDisplay()
         frames[i].glow:Hide()
     end
     
-    if visibleCount > 0 then
+        if visibleCount > 0 then
         f:Show()
         local rows = math.ceil(visibleCount / db.columns)
         if rows == 0 then rows = 1 end
@@ -421,6 +536,9 @@ local function UpdateDisplay()
     else
         f:Hide()
     end
+    
+    -- Atualiza debug display (se ativado)
+    UpdateDebugDisplay()
 end
 
 local optionsPanel
@@ -648,24 +766,96 @@ local function CreateOptionsPanel()
     cbRest:SetChecked(MyCurrenciesDB.showOnlyResting)
     cbRest:SetScript("OnClick", function(self) MyCurrenciesDB.showOnlyResting = self:GetChecked() UpdateDisplay() end)
 
-    local cbRegion = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
+        local cbRegion = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
     cbRegion:SetPoint("TOPLEFT", 20, -185)
     cbRegion.text:SetText(L:S("SHOW_ONLY_EXPANSION"))
     cbRegion:SetChecked(MyCurrenciesDB.autoFilterRegion)
     cbRegion:SetScript("OnClick", function(self) MyCurrenciesDB.autoFilterRegion = self:GetChecked() UpdateDisplay() end)
 
-    -- ========== SEÇÃO ADICIONAR MOEDA/ITEM CUSTOMIZADO ==========
+    -- ========== SEÇÃO DEBUG / DESENVOLVEDOR ==========
+    local debugLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    debugLabel:SetPoint("TOPLEFT", 16, -210)
+    debugLabel:SetText(L:S("DEBUG_TITLE") or "Developer / Debug")
+
+    local cbDebugMode = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
+    cbDebugMode:SetPoint("TOPLEFT", 20, -235)
+    cbDebugMode.text:SetText(L:S("DEBUG_MODE") or "Debug Mode (show map ID & expansion)")
+    cbDebugMode:SetChecked(MyCurrenciesDB.debugMode)
+        cbDebugMode:SetScript("OnClick", function(self)
+        MyCurrenciesDB.debugMode = self:GetChecked()
+        UpdateDisplay()
+    end)
+
+    local cbDebugLog = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
+    cbDebugLog:SetPoint("TOPLEFT", 20, -260)
+    cbDebugLog.text:SetText(L:S("DEBUG_LOG_UNMAPPED") or "Log unmapped maps to chat")
+    cbDebugLog:SetChecked(MyCurrenciesDB.debugLogUnmapped)
+    cbDebugLog:SetScript("OnClick", function(self)
+        MyCurrenciesDB.debugLogUnmapped = self:GetChecked()
+        if not MyCurrenciesDB._loggedMaps then MyCurrenciesDB._loggedMaps = {} end
+    end)
+
+    -- Botão para mostrar mapa atual no chat
+    local btnShowMap = CreateFrame("Button", nil, panel, "GameMenuButtonTemplate")
+    btnShowMap:SetPoint("TOPLEFT", 20, -285)
+    btnShowMap:SetSize(200, 22)
+    btnShowMap:SetText(L:S("DEBUG_SHOW_MAP") or "Show Current Map Info")
+    btnShowMap:SetScript("OnClick", function()
+        local mapID = C_Map.GetBestMapForUnit("player")
+        local info = C_Map.GetMapInfo(mapID)
+        local name = info and info.name or "Unknown"
+        local parentID = info and info.parentMapID or "N/A"
+        local parentInfo = info and info.parentMapID and C_Map.GetMapInfo(info.parentMapID)
+        local parentName = parentInfo and parentInfo.name or "N/A"
+        local exp = ns.GetExpansionByMapID(mapID)
+        local expText = exp or "|cFFFF6B6BNOT MAPPED|r"
+
+        print("|cFFFFD100==== Current Map Info ====|r")
+        print("Map ID: |cFF00CCFF" .. mapID .. "|r")
+        print("Name: |cFFCCCCCC" .. name .. "|r")
+        print("Parent ID: " .. tostring(parentID) .. " | Parent Name: " .. parentName)
+        print("Expansion: " .. expText)
+        print("|cFFFFD100============================|r")
+        if not exp then
+            print("|cFFFF6B6BSuggestion:|r Add this to MapData.lua:")
+            print("|cFF00FF00[" .. mapID .. "] = \"<EXPANSAO>\", -- " .. name .. "|r")
+        end
+    end)
+
+    -- Botão para mostrar hierarquia completa
+    local btnShowHierarchy = CreateFrame("Button", nil, panel, "GameMenuButtonTemplate")
+    btnShowHierarchy:SetPoint("TOPLEFT", 230, -285)
+    btnShowHierarchy:SetSize(200, 22)
+    btnShowHierarchy:SetText(L:S("DEBUG_SHOW_HIERARCHY") or "Show Map Hierarchy")
+    btnShowHierarchy:SetScript("OnClick", function()
+        local mapID = C_Map.GetBestMapForUnit("player")
+        local hierarchy = GetMapHierarchyString(mapID)
+        print("|cFFFFD100==== Map Hierarchy ====|r")
+        for line in string.gmatch(hierarchy, "[^\n]+") do
+            print(line)
+        end
+        print("|cFFFFD100========================|r")
+    end)
+
+    -- Linha separadora
+    local separator = panel:CreateTexture(nil, "ARTWORK")
+    separator:SetColorTexture(1, 1, 1, 0.3)
+    separator:SetPoint("TOPLEFT", 16, -310)
+    separator:SetPoint("TOPRIGHT", -16, -310)
+    separator:SetHeight(1)
+
+        -- ========== SEÇÃO ADICIONAR MOEDA/ITEM CUSTOMIZADO ==========
     local customLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-    customLabel:SetPoint("TOPLEFT", 16, -210)
+    customLabel:SetPoint("TOPLEFT", 16, -330)
     customLabel:SetText(L:S("ADD_CUSTOM_TITLE") or "Add Custom Currency/Item")
 
     -- ID Input
     local idLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    idLabel:SetPoint("TOPLEFT", 20, -235)
+    idLabel:SetPoint("TOPLEFT", 20, -355)
     idLabel:SetText((L:S("ID") or "ID") .. ":")
     
     local idInput = CreateFrame("EditBox", nil, panel, "InputBoxTemplate")
-    idInput:SetPoint("TOPLEFT", 45, -235)
+    idInput:SetPoint("TOPLEFT", 45, -355)
     idInput:SetSize(80, 24)
     idInput:SetAutoFocus(false)
     idInput:SetMaxLetters(50)
@@ -673,11 +863,11 @@ local function CreateOptionsPanel()
 
     -- Category Dropdown
     local catLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    catLabel:SetPoint("TOPLEFT", 140, -235)
+    catLabel:SetPoint("TOPLEFT", 140, -355)
     catLabel:SetText((L:S("CATEGORY") or "Category") .. ":")
     
     local catDropdown = CreateFrame("Frame", "MC_CategoryDropdown", panel, "UIDropDownMenuTemplate")
-    catDropdown:SetPoint("TOPLEFT", 195, -230)
+    catDropdown:SetPoint("TOPLEFT", 195, -350)
     UIDropDownMenu_SetWidth(catDropdown, 140)
     
     local function InitializeCategoryDropdown(frame, level)
@@ -705,12 +895,12 @@ local function CreateOptionsPanel()
     end
 
     -- Type Dropdown
-    local typeLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    typeLabel:SetPoint("TOPLEFT", 370, -235)
+        local typeLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    typeLabel:SetPoint("TOPLEFT", 370, -355)
     typeLabel:SetText((L:S("TYPE") or "Type") .. ":")
     
     local typeDropdown = CreateFrame("Frame", "MC_TypeDropdown", panel, "UIDropDownMenuTemplate")
-    typeDropdown:SetPoint("TOPLEFT", 410, -230)
+    typeDropdown:SetPoint("TOPLEFT", 410, -350)
     UIDropDownMenu_SetWidth(typeDropdown, 90)
     
     local function InitializeTypeDropdown(frame, level)
@@ -867,9 +1057,9 @@ local function CreateOptionsPanel()
         C_Timer.After(0.2, function() if suggestFrame then suggestFrame:Hide() end end)
     end)
 
-    -- Add Button
+        -- Add Button
     local addButton = CreateFrame("Button", nil, panel, "GameMenuButtonTemplate")
-    addButton:SetPoint("TOPLEFT", 520, -233)
+    addButton:SetPoint("TOPLEFT", 520, -353)
     addButton:SetSize(80, 26)
     addButton:SetText(L:S("BTN_ADD") or "Add")
     addButton:SetScript("OnClick", function()
@@ -922,9 +1112,9 @@ local function CreateOptionsPanel()
         idInput:SetText("")
     end)
 
-    -- Search Box
+        -- Search Box
     local searchBox = CreateFrame("EditBox", "MC_SearchBox", panel, "SearchBoxTemplate")
-    searchBox:SetPoint("TOPLEFT", 20, -270)
+    searchBox:SetPoint("TOPLEFT", 20, -390)
     searchBox:SetSize(200, 20)
     searchBox:SetAutoFocus(false)
     if searchBox.Instructions then
@@ -937,9 +1127,9 @@ local function CreateOptionsPanel()
         UpdateOptionsList(self:GetText())
     end)
 
-    local scrollFrame = CreateFrame("ScrollFrame", "MC_ScrollFrame", panel, "UIPanelScrollFrameTemplate")
-    scrollFrame:SetPoint("TOPLEFT", 20, -275)
-    scrollFrame:SetPoint("TOPLEFT", 20, -300)
+        local scrollFrame = CreateFrame("ScrollFrame", "MC_ScrollFrame", panel, "UIPanelScrollFrameTemplate")
+    scrollFrame:SetPoint("TOPLEFT", 20, -395)
+    scrollFrame:SetPoint("TOPLEFT", 20, -420)
     scrollFrame:SetPoint("BOTTOMRIGHT", -30, 20)
     
     scrollChild = CreateFrame("Frame")
@@ -1003,19 +1193,24 @@ f:SetScript("OnEvent", function(self, event, arg1)
     elseif event == "PLAYER_ENTERING_WORLD" then
         if not isInitialized then
             isInitialized = true
-            C_Timer.After(1, function()
+                        C_Timer.After(1, function()
+                CreateDebugFrame()
                 LoadGameCurrencies()
                 UpdateLocalizedNames()
                 CreateOptionsPanel()
                 UpdateDisplay()
+                CheckDebugOnZoneChange()
             end)
         else
             UpdateDisplay()
         end
     elseif event == "GET_ITEM_INFO_RECEIVED" then
         if isInitialized then UpdateLocalizedNames() end
-    elseif event == "ZONE_CHANGED_NEW_AREA" then
-        if isInitialized then UpdateDisplay() end
+        elseif event == "ZONE_CHANGED_NEW_AREA" then
+        if isInitialized then
+            UpdateDisplay()
+            CheckDebugOnZoneChange()
+        end
     else
         if isInitialized then UpdateDisplay() end
     end

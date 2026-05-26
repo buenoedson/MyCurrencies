@@ -97,8 +97,15 @@ local translations = {
         ERROR_CATEGORY_REQUIRED = "Erro: Categoria obrigatória",
         ERROR_ID_EXISTS = "Erro: Este ID já existe",
         ADDED = "Adicionado:",
-        CLEARED_ALL = "Todos os itens customizados foram limpos",
+                CLEARED_ALL = "Todos os itens customizados foram limpos",
         RELOAD_REQUIRED = "Recarregue a interface (/reload) para aplicar o idioma.",
+        
+        -- Debug / Developer
+        DEBUG_TITLE = "Desenvolvedor / Debug",
+        DEBUG_MODE = "Modo Debug (exibe ID do mapa e expansão)",
+        DEBUG_LOG_UNMAPPED = "Gerar log se mapa não estiver mapeado",
+        DEBUG_SHOW_MAP = "Mostrar Info do Mapa Atual",
+        DEBUG_SHOW_HIERARCHY = "Mostrar Hierarquia do Mapa",
     },
     
     -- ENGLISH (EN-US)
@@ -142,8 +149,15 @@ local translations = {
         ERROR_CATEGORY_REQUIRED = "Error: Category required",
         ERROR_ID_EXISTS = "Error: This ID already exists",
         ADDED = "Added:",
-        CLEARED_ALL = "Cleared all custom items",
+                CLEARED_ALL = "Cleared all custom items",
         RELOAD_REQUIRED = "Reload UI (/reload) to apply language changes.",
+        
+        -- Debug / Developer
+        DEBUG_TITLE = "Developer / Debug",
+        DEBUG_MODE = "Debug Mode (show map ID & expansion)",
+        DEBUG_LOG_UNMAPPED = "Log if map is not mapped to any expansion",
+        DEBUG_SHOW_MAP = "Show Current Map Info",
+        DEBUG_SHOW_HIERARCHY = "Show Map Hierarchy",
     },
     
     -- ESPAÑOL (ES-ES)
@@ -187,8 +201,15 @@ local translations = {
         ERROR_CATEGORY_REQUIRED = "Error: Categoría requerida",
         ERROR_ID_EXISTS = "Error: Este ID ya existe",
         ADDED = "Añadido:",
-        CLEARED_ALL = "Se borraron todos los objetos personalizados",
+                CLEARED_ALL = "Se borraron todos los objetos personalizados",
         RELOAD_REQUIRED = "Recarga la interfaz (/reload) para aplicar el idioma.",
+        
+        -- Debug / Developer
+        DEBUG_TITLE = "Desarrollador / Depuración",
+        DEBUG_MODE = "Modo depuración (mostrar ID del mapa y expansión)",
+        DEBUG_LOG_UNMAPPED = "Registrar si el mapa no está mapeado",
+        DEBUG_SHOW_MAP = "Mostrar Info del Mapa Actual",
+        DEBUG_SHOW_HIERARCHY = "Mostrar Jerarquía del Mapa",
     },
     
     -- FRANÇAIS (FR-FR)
@@ -217,8 +238,15 @@ local translations = {
         BURNING_CRUSADE = "Burning Crusade",
         HIDDEN_CURRENCY = "Devise Cachée",
         ITEMS = "Objets",
-        ANCIENT_ITEMS = "Objets - Anciens",
+                ANCIENT_ITEMS = "Objets - Anciens",
         RELOAD_REQUIRED = "Rechargez l'interface (/reload) pour appliquer la langue.",
+        
+        -- Debug / Developer
+        DEBUG_TITLE = "Développeur / Débogage",
+        DEBUG_MODE = "Mode débogage (afficher l'ID de la carte et l'extension)",
+        DEBUG_LOG_UNMAPPED = "Journaliser si la carte n'est pas répertoriée",
+        DEBUG_SHOW_MAP = "Afficher les Infos de la Carte Actuelle",
+        DEBUG_SHOW_HIERARCHY = "Afficher la Hiérarchie de la Carte",
     },
     
     -- DEUTSCH (DE-DE)
@@ -247,8 +275,15 @@ local translations = {
         BURNING_CRUSADE = "Burning Crusade",
         HIDDEN_CURRENCY = "Versteckte Währung",
         ITEMS = "Gegenstände",
-        ANCIENT_ITEMS = "Gegenstände - Antik",
+                ANCIENT_ITEMS = "Gegenstände - Antik",
         RELOAD_REQUIRED = "Benutzeroberfläche neu laden (/reload), um die Sprache anzuwenden.",
+        
+        -- Debug / Developer
+        DEBUG_TITLE = "Entwickler / Debug",
+        DEBUG_MODE = "Debug-Modus (Karten-ID und Erweiterung anzeigen)",
+        DEBUG_LOG_UNMAPPED = "Protokollieren, wenn Karte nicht zugeordnet ist",
+        DEBUG_SHOW_MAP = "Aktuelle Karteninfo anzeigen",
+        DEBUG_SHOW_HIERARCHY = "Kartenhierarchie anzeigen",
     },
     
     -- ITALIANO (IT-IT)
@@ -277,8 +312,15 @@ local translations = {
         BURNING_CRUSADE = "Burning Crusade",
         HIDDEN_CURRENCY = "Valuta Nascosta",
         ITEMS = "Oggetti",
-        ANCIENT_ITEMS = "Oggetti - Antichi",
+                ANCIENT_ITEMS = "Oggetti - Antichi",
         RELOAD_REQUIRED = "Ricarica l'interfaccia (/reload) per applicare la lingua.",
+        
+        -- Debug / Developer
+        DEBUG_TITLE = "Sviluppatore / Debug",
+        DEBUG_MODE = "Modalità debug (mostra ID mappa ed espansione)",
+        DEBUG_LOG_UNMAPPED = "Registra se la mappa non è associata",
+        DEBUG_SHOW_MAP = "Mostra Info Mappa Corrente",
+        DEBUG_SHOW_HIERARCHY = "Mostra Gerarchia Mappa",
     },
     
     -- РУССКИЙ (RU-RU)
@@ -307,8 +349,15 @@ local translations = {
         BURNING_CRUSADE = "Burning Crusade",
         HIDDEN_CURRENCY = "Скрытая Валюта",
         ITEMS = "Предметы",
-        ANCIENT_ITEMS = "Предметы - Древние",
+                ANCIENT_ITEMS = "Предметы - Древние",
         RELOAD_REQUIRED = "Перезагрузите интерфейс (/reload) для применения языка.",
+        
+        -- Debug / Developer
+        DEBUG_TITLE = "Разработчик / Отладка",
+        DEBUG_MODE = "Режим отладки (показать ID карты и дополнение)",
+        DEBUG_LOG_UNMAPPED = "Записывать, если карта не сопоставлена",
+        DEBUG_SHOW_MAP = "Показать информацию о текущей карте",
+        DEBUG_SHOW_HIERARCHY = "Показать иерархию карты",
     },
     
     -- 简体中文 (ZH-CN)
@@ -337,8 +386,15 @@ local translations = {
         BURNING_CRUSADE = "Burning Crusade",
         HIDDEN_CURRENCY = "隐藏货币",
         ITEMS = "物品",
-        ANCIENT_ITEMS = "物品 - 古代",
+                ANCIENT_ITEMS = "物品 - 古代",
         RELOAD_REQUIRED = "重载界面 (/reload) 以应用语言更改。",
+        
+        -- Debug / Developer
+        DEBUG_TITLE = "开发人员 / 调试",
+        DEBUG_MODE = "调试模式 (显示地图ID和扩展包)",
+        DEBUG_LOG_UNMAPPED = "记录未映射的地图",
+        DEBUG_SHOW_MAP = "显示当前地图信息",
+        DEBUG_SHOW_HIERARCHY = "显示地图层级",
     },
     
     -- 繁體中文 (ZH-TW)
@@ -367,8 +423,15 @@ local translations = {
         BURNING_CRUSADE = "Burning Crusade",
         HIDDEN_CURRENCY = "隱藏貨幣",
         ITEMS = "物品",
-        ANCIENT_ITEMS = "物品 - 古代",
+                ANCIENT_ITEMS = "物品 - 古代",
         RELOAD_REQUIRED = "重載介面 (/reload) 以套用語言變更。",
+        
+        -- Debug / Developer
+        DEBUG_TITLE = "開發人員 / 除錯",
+        DEBUG_MODE = "除錯模式 (顯示地圖ID和擴充包)",
+        DEBUG_LOG_UNMAPPED = "記錄未映射的地圖",
+        DEBUG_SHOW_MAP = "顯示目前地圖資訊",
+        DEBUG_SHOW_HIERARCHY = "顯示地圖層級",
     },
     
     -- 한국어 (KO-KR)
@@ -397,8 +460,15 @@ local translations = {
         BURNING_CRUSADE = "Burning Crusade",
         HIDDEN_CURRENCY = "숨겨진 화폐",
         ITEMS = "아이템",
-        ANCIENT_ITEMS = "아이템 - 고대",
+                ANCIENT_ITEMS = "아이템 - 고대",
         RELOAD_REQUIRED = "언어 변경을 적용하려면 UI를 다시 로드(/reload)하세요.",
+        
+        -- Debug / Developer
+        DEBUG_TITLE = "개발자 / 디버그",
+        DEBUG_MODE = "디버그 모드 (지도 ID 및 확장팩 표시)",
+        DEBUG_LOG_UNMAPPED = "매핑되지 않은 지도 기록",
+        DEBUG_SHOW_MAP = "현재 지도 정보 표시",
+        DEBUG_SHOW_HIERARCHY = "지도 계층 표시",
     },
 }
 
