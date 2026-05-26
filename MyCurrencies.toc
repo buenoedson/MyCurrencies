@@ -2,6 +2,7 @@
 ## Title: My Currencies Tracker
 ## Notes: Simple currency monitor.
 ## Author: buenoedson
+## X-Curse-Project-ID: 1546009
 ## Version: 2026.05.25.1
 ## SavedVariables: MyCurrenciesDB
 ## IconTexture: Interface\Icons\INV_Misc_Coin_01
