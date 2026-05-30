@@ -554,7 +554,7 @@ local function UpdateOptionsList(filterText)
     for _, cb in ipairs(catCheckboxes) do cb:Hide() end
     for _, btn in pairs(removeButtons) do btn:Hide() end
     
-    local yOffset = -70
+    local yOffset = -35
     local lastCategory = ""
     local catIndex = 1
     
@@ -1127,8 +1127,7 @@ local function CreateOptionsPanel()
         UpdateOptionsList(self:GetText())
     end)
 
-        local scrollFrame = CreateFrame("ScrollFrame", "MC_ScrollFrame", panel, "UIPanelScrollFrameTemplate")
-    scrollFrame:SetPoint("TOPLEFT", 20, -395)
+            local scrollFrame = CreateFrame("ScrollFrame", "MC_ScrollFrame", panel, "UIPanelScrollFrameTemplate")
     scrollFrame:SetPoint("TOPLEFT", 20, -420)
     scrollFrame:SetPoint("BOTTOMRIGHT", -30, 20)
     
@@ -1193,8 +1192,7 @@ f:SetScript("OnEvent", function(self, event, arg1)
     elseif event == "PLAYER_ENTERING_WORLD" then
         if not isInitialized then
             isInitialized = true
-                        C_Timer.After(1, function()
-                CreateDebugFrame()
+                                    C_Timer.After(1, function()
                 LoadGameCurrencies()
                 UpdateLocalizedNames()
                 CreateOptionsPanel()
@@ -1204,9 +1202,9 @@ f:SetScript("OnEvent", function(self, event, arg1)
         else
             UpdateDisplay()
         end
-    elseif event == "GET_ITEM_INFO_RECEIVED" then
+        elseif event == "GET_ITEM_INFO_RECEIVED" then
         if isInitialized then UpdateLocalizedNames() end
-        elseif event == "ZONE_CHANGED_NEW_AREA" then
+    elseif event == "ZONE_CHANGED_NEW_AREA" then
         if isInitialized then
             UpdateDisplay()
             CheckDebugOnZoneChange()
