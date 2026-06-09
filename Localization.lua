@@ -106,6 +106,7 @@ local translations = {
         DEBUG_LOG_UNMAPPED = "Gerar log se mapa não estiver mapeado",
         DEBUG_SHOW_MAP = "Mostrar Info do Mapa Atual",
         DEBUG_SHOW_HIERARCHY = "Mostrar Hierarquia do Mapa",
+        DEBUG_HIERARCHY_TITLE = "Hierarquia de Mapas:",
     },
     
     -- ENGLISH (EN-US)
@@ -158,6 +159,7 @@ local translations = {
         DEBUG_LOG_UNMAPPED = "Log if map is not mapped to any expansion",
         DEBUG_SHOW_MAP = "Show Current Map Info",
         DEBUG_SHOW_HIERARCHY = "Show Map Hierarchy",
+        DEBUG_HIERARCHY_TITLE = "Map Hierarchy:",
     },
     
     -- ESPAÑOL (ES-ES)
@@ -210,6 +212,7 @@ local translations = {
         DEBUG_LOG_UNMAPPED = "Registrar si el mapa no está mapeado",
         DEBUG_SHOW_MAP = "Mostrar Info del Mapa Actual",
         DEBUG_SHOW_HIERARCHY = "Mostrar Jerarquía del Mapa",
+        DEBUG_HIERARCHY_TITLE = "Jerarquía de Mapas:",
     },
     
     -- FRANÇAIS (FR-FR)
@@ -247,6 +250,7 @@ local translations = {
         DEBUG_LOG_UNMAPPED = "Journaliser si la carte n'est pas répertoriée",
         DEBUG_SHOW_MAP = "Afficher les Infos de la Carte Actuelle",
         DEBUG_SHOW_HIERARCHY = "Afficher la Hiérarchie de la Carte",
+        DEBUG_HIERARCHY_TITLE = "Hiérarchie de la Carte :",
     },
     
     -- DEUTSCH (DE-DE)
@@ -284,6 +288,7 @@ local translations = {
         DEBUG_LOG_UNMAPPED = "Protokollieren, wenn Karte nicht zugeordnet ist",
         DEBUG_SHOW_MAP = "Aktuelle Karteninfo anzeigen",
         DEBUG_SHOW_HIERARCHY = "Kartenhierarchie anzeigen",
+        DEBUG_HIERARCHY_TITLE = "Kartenhierarchie:",
     },
     
     -- ITALIANO (IT-IT)
@@ -321,6 +326,7 @@ local translations = {
         DEBUG_LOG_UNMAPPED = "Registra se la mappa non è associata",
         DEBUG_SHOW_MAP = "Mostra Info Mappa Corrente",
         DEBUG_SHOW_HIERARCHY = "Mostra Gerarchia Mappa",
+        DEBUG_HIERARCHY_TITLE = "Gerarchia Mappa:",
     },
     
     -- РУССКИЙ (RU-RU)
@@ -358,6 +364,7 @@ local translations = {
         DEBUG_LOG_UNMAPPED = "Записывать, если карта не сопоставлена",
         DEBUG_SHOW_MAP = "Показать информацию о текущей карте",
         DEBUG_SHOW_HIERARCHY = "Показать иерархию карты",
+        DEBUG_HIERARCHY_TITLE = "Иерархия карты:",
     },
     
     -- 简体中文 (ZH-CN)
@@ -395,6 +402,7 @@ local translations = {
         DEBUG_LOG_UNMAPPED = "记录未映射的地图",
         DEBUG_SHOW_MAP = "显示当前地图信息",
         DEBUG_SHOW_HIERARCHY = "显示地图层级",
+        DEBUG_HIERARCHY_TITLE = "地图层级:",
     },
     
     -- 繁體中文 (ZH-TW)
@@ -432,6 +440,7 @@ local translations = {
         DEBUG_LOG_UNMAPPED = "記錄未映射的地圖",
         DEBUG_SHOW_MAP = "顯示目前地圖資訊",
         DEBUG_SHOW_HIERARCHY = "顯示地圖層級",
+        DEBUG_HIERARCHY_TITLE = "地圖層級:",
     },
     
     -- 한국어 (KO-KR)
@@ -469,6 +478,7 @@ local translations = {
         DEBUG_LOG_UNMAPPED = "매핑되지 않은 지도 기록",
         DEBUG_SHOW_MAP = "현재 지도 정보 표시",
         DEBUG_SHOW_HIERARCHY = "지도 계층 표시",
+        DEBUG_HIERARCHY_TITLE = "지도 계층:",
     },
 }
 

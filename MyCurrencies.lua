@@ -121,7 +121,7 @@ local function UpdateDebugDisplay()
     debugFrame:SetScript("OnEnter", function()
         if not MyCurrenciesDB.debugMode then return end
         GameTooltip:SetOwner(debugFrame, "ANCHOR_RIGHT")
-        GameTooltip:AddLine("|cFFFFD100Hierarquia de Mapas:")
+        GameTooltip:AddLine("|cFFFFD100" .. L:S("DEBUG_HIERARCHY_TITLE"))
         local hierarchy = GetMapHierarchyString(mapID)
         for line in string.gmatch(hierarchy, "[^\n]+") do
             GameTooltip:AddLine(line, 1, 1, 1, true)
