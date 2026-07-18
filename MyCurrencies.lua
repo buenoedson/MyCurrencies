@@ -107,14 +107,13 @@ local function UpdateDebugDisplay()
     if not debugFrame then return end
     
     local mapID = C_Map.GetBestMapForUnit("player")
-    local exp = ns.GetExpansionByMapID(mapID)
-    local expColor = exp and "|cFF00FF00" or "|cFFFF6B6B"
-    local expText = exp or "NAO MAPEADO!"
-    
-    local info = C_Map.GetMapInfo(mapID)
+    local info = mapID and C_Map.GetMapInfo(mapID)
     local mapName = info and info.name or "Unknown"
+    local exp = mapID and ns.GetExpansionByMapID(mapID)
+    local expColor = exp and "|cFF00FF00" or "|cFFFF6B6B"
+    local expText = exp or (mapID and "NAO MAPEADO!" or "SEM MAPA!")
     
-    local text = "Mapa ID: |cFF00CCFF" .. mapID .. "|r (|cFFCCCCCC" .. mapName .. "|r)\n"
+    local text = "Mapa ID: |cFF00CCFF" .. (mapID or "nil") .. "|r (|cFFCCCCCC" .. mapName .. "|r)\n"
     text = text .. "Expansao: " .. expColor .. expText .. "|r"
     
     -- Mostra hierarquia completa no tooltip
@@ -123,8 +122,12 @@ local function UpdateDebugDisplay()
         GameTooltip:SetOwner(debugFrame, "ANCHOR_RIGHT")
         GameTooltip:AddLine("|cFFFFD100" .. L:S("DEBUG_HIERARCHY_TITLE"))
         local hierarchy = GetMapHierarchyString(mapID)
-        for line in string.gmatch(hierarchy, "[^\n]+") do
-            GameTooltip:AddLine(line, 1, 1, 1, true)
+        if hierarchy == "" then
+            GameTooltip:AddLine("Sem dados de mapa", 1, 1, 1, true)
+        else
+            for line in string.gmatch(hierarchy, "[^\n]+") do
+                GameTooltip:AddLine(line, 1, 1, 1, true)
+            end
         end
         GameTooltip:Show()
     end)
@@ -802,6 +805,10 @@ local function CreateOptionsPanel()
     btnShowMap:SetText(L:S("DEBUG_SHOW_MAP") or "Show Current Map Info")
     btnShowMap:SetScript("OnClick", function()
         local mapID = C_Map.GetBestMapForUnit("player")
+        if not mapID then
+            print("|cFFFFD100[My Currencies - DEBUG]|r ID de mapa nulo ou indisponível.")
+            return
+        end
         local info = C_Map.GetMapInfo(mapID)
         local name = info and info.name or "Unknown"
         local parentID = info and info.parentMapID or "N/A"
@@ -829,6 +836,10 @@ local function CreateOptionsPanel()
     btnShowHierarchy:SetText(L:S("DEBUG_SHOW_HIERARCHY") or "Show Map Hierarchy")
     btnShowHierarchy:SetScript("OnClick", function()
         local mapID = C_Map.GetBestMapForUnit("player")
+        if not mapID then
+            print("|cFFFFD100[My Currencies - DEBUG]|r ID de mapa nulo ou indisponível.")
+            return
+        end
         local hierarchy = GetMapHierarchyString(mapID)
         print("|cFFFFD100==== Map Hierarchy ====|r")
         for line in string.gmatch(hierarchy, "[^\n]+") do
