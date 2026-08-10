@@ -151,31 +151,12 @@ end
 local trackedData = {}
 
 -- ============================================================================
--- CARREGA MOEDAS CUSTOMIZADAS DO USUÁRIO
--- ============================================================================
-local function LoadCustomItems()
-    if not MyCurrenciesDB.customItems then return end
-    
-    for _, item in ipairs(MyCurrenciesDB.customItems) do
-        if item.id and item.cat then
-            table.insert(trackedData, {
-                cat = item.cat,
-                type = item.type or 'item',
-                id = item.id,
-                name = item.name or "Custom Item",
-                custom = true
-            })
-        end
-    end
-end
-
--- ============================================================================
--- SCANNER DINÂMICO DE MOEDAS COM SUPORTE A SUBCATEGORIAS
+-- SCANNER DINÂMICO DE MOEDAS COM SUPORTE A SUBCATEGORIAS E DESDUPLICAÇÃO
 -- ============================================================================
 local function LoadGameCurrencies()
     trackedData = {}
     local finalData = {}
-    local foundIDs = {}
+    local foundKeys = {}
     
     local manualData = {
         -- ITENS E MOEDAS OCULTAS - MIDNIGHT
@@ -229,72 +210,116 @@ local function LoadGameCurrencies()
     }
 
     for _, mData in ipairs(manualData) do
-        table.insert(finalData, {
-            cat = mData.cat,
-            type = mData.type,
-            id = mData.id,
-            name = mData.name,
-            threshold = mData.threshold
-        })
-        if mData.type == "currency" then foundIDs[mData.id] = true end
+        local key = (mData.type or 'item') .. ":" .. mData.id
+        if not foundKeys[key] then
+            foundKeys[key] = true
+            table.insert(finalData, {
+                cat = mData.cat,
+                type = mData.type or 'item',
+                id = mData.id,
+                name = mData.name,
+                threshold = mData.threshold
+            })
+        end
     end
 
-    local collapsedHeaders = {}
-    local i = 1
-    
-    while i <= C_CurrencyInfo.GetCurrencyListSize() do
-        local info = C_CurrencyInfo.GetCurrencyListInfo(i)
-        if info.isHeader and not info.isExpanded then
-            collapsedHeaders[info.name] = true
-            C_CurrencyInfo.ExpandCurrencyList(i, true)
+    -- Expande iterativamente todos os cabeçalhos para garanitir varredura completa da árvore de moedas
+    local collapsedHeaderNames = {}
+    local maxPasses = 10
+    local pass = 0
+    local changed = true
+    while changed and pass < maxPasses do
+        changed = false
+        pass = pass + 1
+        local listSize = C_CurrencyInfo.GetCurrencyListSize()
+        for i = 1, listSize do
+            local info = C_CurrencyInfo.GetCurrencyListInfo(i)
+            if info and info.isHeader and not info.isExpanded then
+                if info.name then collapsedHeaderNames[info.name] = true end
+                C_CurrencyInfo.ExpandCurrencyList(i, true)
+                changed = true
+                break
+            end
         end
-        i = i + 1
     end
-    
-    i = 1
+
+    -- Escaneia moedas da API C_CurrencyInfo
     local currentMainCat = "Moedas"
     local currentCat = "Moedas"
+    local totalItems = C_CurrencyInfo.GetCurrencyListSize()
     
-    while i <= C_CurrencyInfo.GetCurrencyListSize() do
+    for i = 1, totalItems do
         local info = C_CurrencyInfo.GetCurrencyListInfo(i)
-        if info.isHeader then
-            local lowerName = string.lower(info.name)
-            -- Detecta se o cabeçalho atual é uma subcategoria (Season/Temporada)
-            if string.find(lowerName, "season") or string.find(lowerName, "temporada") or string.find(lowerName, "série") then
-                currentCat = currentMainCat .. " - " .. info.name
+        if info then
+            if info.isHeader then
+                local lowerName = string.lower(info.name or "")
+                if string.find(lowerName, "season") or string.find(lowerName, "temporada") or string.find(lowerName, "série") or string.find(lowerName, "serie") then
+                    currentCat = currentMainCat .. " - " .. (info.name or "")
+                else
+                    currentMainCat = info.name or "Moedas"
+                    currentCat = info.name or "Moedas"
+                end
             else
-                currentMainCat = info.name
-                currentCat = info.name
-            end
-        else
-            local link = C_CurrencyInfo.GetCurrencyListLink(i)
-            if link then
-                local currencyID = C_CurrencyInfo.GetCurrencyIDFromLink(link)
-                if currencyID and not foundIDs[currencyID] then
-                    table.insert(finalData, {
-                        cat = currentCat,
-                        type = 'currency',
-                        id = currencyID,
-                        name = info.name
-                    })
-                    foundIDs[currencyID] = true
+                local currencyID = info.currencyID
+                if not currencyID then
+                    local link = C_CurrencyInfo.GetCurrencyListLink(i)
+                    if link then
+                        currencyID = C_CurrencyInfo.GetCurrencyIDFromLink(link)
+                    end
+                end
+                
+                if currencyID and currencyID > 0 then
+                    local key = "currency:" .. currencyID
+                    if not foundKeys[key] then
+                        foundKeys[key] = true
+                        table.insert(finalData, {
+                            cat = currentCat,
+                            type = 'currency',
+                            id = currencyID,
+                            name = info.name or ("Currency " .. currencyID)
+                        })
+                    end
                 end
             end
         end
-        i = i + 1
     end
-    
-    i = 1
-    while i <= C_CurrencyInfo.GetCurrencyListSize() do
+
+    -- Restaura estado recolhido dos cabeçalhos em ordem reversa
+    for i = C_CurrencyInfo.GetCurrencyListSize(), 1, -1 do
         local info = C_CurrencyInfo.GetCurrencyListInfo(i)
-        if info.isHeader and collapsedHeaders[info.name] then
+        if info and info.isHeader and info.isExpanded and info.name and collapsedHeaderNames[info.name] then
             C_CurrencyInfo.ExpandCurrencyList(i, false)
         end
-        i = i + 1
     end
-    
+
+    -- Processa itens e moedas customizadas com desduplicação estrita
+    if MyCurrenciesDB and MyCurrenciesDB.customItems then
+        for _, item in ipairs(MyCurrenciesDB.customItems) do
+            if item.id and item.cat then
+                local itemType = item.type or 'item'
+                local key = itemType .. ":" .. item.id
+                if foundKeys[key] then
+                    for _, existing in ipairs(finalData) do
+                        if existing.type == itemType and existing.id == item.id then
+                            existing.custom = true
+                            break
+                        end
+                    end
+                else
+                    foundKeys[key] = true
+                    table.insert(finalData, {
+                        cat = item.cat,
+                        type = itemType,
+                        id = item.id,
+                        name = item.name or "Custom Item",
+                        custom = true
+                    })
+                end
+            end
+        end
+    end
+
     trackedData = finalData
-    LoadCustomItems()  -- Carrega moedas customizadas
 end
 
 -- ============================================================================
@@ -557,7 +582,7 @@ local function UpdateOptionsList(filterText)
     for _, cb in ipairs(catCheckboxes) do cb:Hide() end
     for _, btn in pairs(removeButtons) do btn:Hide() end
     
-    local yOffset = -35
+    local yOffset = -470
     local lastCategory = ""
     local catIndex = 1
     
@@ -577,7 +602,7 @@ local function UpdateOptionsList(filterText)
                     catCheckboxes[catIndex] = catHeaderCB
                 end
                 catHeaderCB:ClearAllPoints()
-                catHeaderCB:SetPoint("TOPLEFT", 0, yOffset)
+                catHeaderCB:SetPoint("TOPLEFT", 16, yOffset)
                 catHeaderCB.text:SetText("|cFFFFD100" .. data.cat .. "|r")
                 catHeaderCB:SetChecked(true)
                 catHeaderCB:Show()
@@ -604,7 +629,7 @@ local function UpdateOptionsList(filterText)
                 optionCheckboxes[i] = cb
             end
             cb:ClearAllPoints()
-            cb:SetPoint("TOPLEFT", 20, yOffset)
+            cb:SetPoint("TOPLEFT", 36, yOffset)
             cb.text:SetText(data.name)
             cb:Show()
             
@@ -642,7 +667,7 @@ local function UpdateOptionsList(filterText)
             yOffset = yOffset - 25
         end
     end
-    scrollChild:SetHeight(math.abs(yOffset) + 20)
+    scrollChild:SetHeight(math.abs(yOffset) + 30)
 end
 
 local function GetCategoryList()
@@ -664,17 +689,25 @@ local function CreateOptionsPanel()
     optionsPanel = panel
     panel.name = "My Currencies"
     
-    local title = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-    title:SetPoint("TOPLEFT", 16, -16)
+    local scrollFrame = CreateFrame("ScrollFrame", "MC_ScrollFrame", panel, "UIPanelScrollFrameTemplate")
+    scrollFrame:SetPoint("TOPLEFT", 10, -10)
+    scrollFrame:SetPoint("BOTTOMRIGHT", -30, 10)
+    
+    scrollChild = CreateFrame("Frame", nil, scrollFrame)
+    scrollFrame:SetScrollChild(scrollChild)
+    scrollChild:SetSize(580, 2000)
+
+    local title = scrollChild:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    title:SetPoint("TOPLEFT", 16, -10)
     title:SetText(L:S("ADDON_TITLE"))
 
     -- Language dropdown
-    local languageLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    languageLabel:SetPoint("TOPLEFT", 20, -50)
+    local languageLabel = scrollChild:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    languageLabel:SetPoint("TOPLEFT", 16, -42)
     languageLabel:SetText(L:S("LANGUAGE") .. ":")
     
-    local langDropdown = CreateFrame("Frame", "MC_LanguageDropdown", panel, "UIDropDownMenuTemplate")
-    langDropdown:SetPoint("TOPLEFT", 20, -70)
+    local langDropdown = CreateFrame("Frame", "MC_LanguageDropdown", scrollChild, "UIDropDownMenuTemplate")
+    langDropdown:SetPoint("TOPLEFT", 10, -58)
     
     local langOptions = L:GetAvailableLanguages()
     local function InitializeLanguageDropdown(frame, level)
@@ -685,7 +718,6 @@ local function CreateOptionsPanel()
             info.func = function(self)
                 MyCurrenciesDB.language = self.value
                 UIDropDownMenu_SetSelectedValue(langDropdown, self.value)
-                -- Aviso para recarregar a interface
                 print("|cFFFFD100My Currencies:|r |cFF00FF00" .. (L:S("RELOAD_REQUIRED") or "Please type /reload to apply language changes.") .. "|r")
             end
             UIDropDownMenu_AddButton(info, level)
@@ -695,8 +727,8 @@ local function CreateOptionsPanel()
     UIDropDownMenu_Initialize(langDropdown, InitializeLanguageDropdown)
     UIDropDownMenu_SetSelectedValue(langDropdown, MyCurrenciesDB.language or L:GetDefaultLanguageCode())
 
-    local sliderIcon = CreateFrame("Slider", "MC_IconSizeSlider", panel, "OptionsSliderTemplate")
-    sliderIcon:SetPoint("TOPLEFT", 20, -120)
+    local sliderIcon = CreateFrame("Slider", "MC_IconSizeSlider", scrollChild, "OptionsSliderTemplate")
+    sliderIcon:SetPoint("TOPLEFT", 16, -110)
     sliderIcon:SetMinMaxValues(16, 64)
     sliderIcon:SetValueStep(2)
     sliderIcon:SetObeyStepOnDrag(true)
@@ -705,7 +737,7 @@ local function CreateOptionsPanel()
     _G[sliderIcon:GetName() .. "High"]:SetText("64")
     _G[sliderIcon:GetName() .. "Text"]:SetText(L:S("ICON_SIZE"))
     
-    local inputIcon = CreateFrame("EditBox", "MC_IconSizeInput", panel, "InputBoxTemplate")
+    local inputIcon = CreateFrame("EditBox", "MC_IconSizeInput", scrollChild, "InputBoxTemplate")
     inputIcon:SetPoint("LEFT", sliderIcon, "RIGHT", 15, 0)
     inputIcon:SetSize(40, 20)
     inputIcon:SetAutoFocus(false)
@@ -729,8 +761,8 @@ local function CreateOptionsPanel()
         UpdateDisplay() 
     end)
 
-    local sliderText = CreateFrame("Slider", "MC_TextSizeSlider", panel, "OptionsSliderTemplate")
-    sliderText:SetPoint("TOPLEFT", 250, -120)
+    local sliderText = CreateFrame("Slider", "MC_TextSizeSlider", scrollChild, "OptionsSliderTemplate")
+    sliderText:SetPoint("TOPLEFT", 250, -110)
     sliderText:SetMinMaxValues(8, 24)
     sliderText:SetValueStep(1)
     sliderText:SetObeyStepOnDrag(true)
@@ -739,7 +771,7 @@ local function CreateOptionsPanel()
     _G[sliderText:GetName() .. "High"]:SetText("24")
     _G[sliderText:GetName() .. "Text"]:SetText(L:S("TEXT_SIZE"))
     
-    local inputText = CreateFrame("EditBox", "MC_TextSizeInput", panel, "InputBoxTemplate")
+    local inputText = CreateFrame("EditBox", "MC_TextSizeInput", scrollChild, "InputBoxTemplate")
     inputText:SetPoint("LEFT", sliderText, "RIGHT", 15, 0)
     inputText:SetSize(40, 20)
     inputText:SetAutoFocus(false)
@@ -763,34 +795,34 @@ local function CreateOptionsPanel()
         UpdateDisplay() 
     end)
     
-    local cbRest = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
-    cbRest:SetPoint("TOPLEFT", 20, -160)
+    local cbRest = CreateFrame("CheckButton", nil, scrollChild, "UICheckButtonTemplate")
+    cbRest:SetPoint("TOPLEFT", 16, -150)
     cbRest.text:SetText(L:S("SHOW_ONLY_RESTING"))
     cbRest:SetChecked(MyCurrenciesDB.showOnlyResting)
     cbRest:SetScript("OnClick", function(self) MyCurrenciesDB.showOnlyResting = self:GetChecked() UpdateDisplay() end)
 
-        local cbRegion = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
-    cbRegion:SetPoint("TOPLEFT", 20, -185)
+    local cbRegion = CreateFrame("CheckButton", nil, scrollChild, "UICheckButtonTemplate")
+    cbRegion:SetPoint("TOPLEFT", 16, -175)
     cbRegion.text:SetText(L:S("SHOW_ONLY_EXPANSION"))
     cbRegion:SetChecked(MyCurrenciesDB.autoFilterRegion)
     cbRegion:SetScript("OnClick", function(self) MyCurrenciesDB.autoFilterRegion = self:GetChecked() UpdateDisplay() end)
 
     -- ========== SEÇÃO DEBUG / DESENVOLVEDOR ==========
-    local debugLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-    debugLabel:SetPoint("TOPLEFT", 16, -210)
+    local debugLabel = scrollChild:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    debugLabel:SetPoint("TOPLEFT", 16, -215)
     debugLabel:SetText(L:S("DEBUG_TITLE") or "Developer / Debug")
 
-    local cbDebugMode = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
-    cbDebugMode:SetPoint("TOPLEFT", 20, -235)
+    local cbDebugMode = CreateFrame("CheckButton", nil, scrollChild, "UICheckButtonTemplate")
+    cbDebugMode:SetPoint("TOPLEFT", 16, -240)
     cbDebugMode.text:SetText(L:S("DEBUG_MODE") or "Debug Mode (show map ID & expansion)")
     cbDebugMode:SetChecked(MyCurrenciesDB.debugMode)
-        cbDebugMode:SetScript("OnClick", function(self)
+    cbDebugMode:SetScript("OnClick", function(self)
         MyCurrenciesDB.debugMode = self:GetChecked()
         UpdateDisplay()
     end)
 
-    local cbDebugLog = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
-    cbDebugLog:SetPoint("TOPLEFT", 20, -260)
+    local cbDebugLog = CreateFrame("CheckButton", nil, scrollChild, "UICheckButtonTemplate")
+    cbDebugLog:SetPoint("TOPLEFT", 16, -265)
     cbDebugLog.text:SetText(L:S("DEBUG_LOG_UNMAPPED") or "Log unmapped maps to chat")
     cbDebugLog:SetChecked(MyCurrenciesDB.debugLogUnmapped)
     cbDebugLog:SetScript("OnClick", function(self)
@@ -799,8 +831,8 @@ local function CreateOptionsPanel()
     end)
 
     -- Botão para mostrar mapa atual no chat
-    local btnShowMap = CreateFrame("Button", nil, panel, "GameMenuButtonTemplate")
-    btnShowMap:SetPoint("TOPLEFT", 20, -285)
+    local btnShowMap = CreateFrame("Button", nil, scrollChild, "GameMenuButtonTemplate")
+    btnShowMap:SetPoint("TOPLEFT", 16, -295)
     btnShowMap:SetSize(200, 22)
     btnShowMap:SetText(L:S("DEBUG_SHOW_MAP") or "Show Current Map Info")
     btnShowMap:SetScript("OnClick", function()
@@ -830,8 +862,8 @@ local function CreateOptionsPanel()
     end)
 
     -- Botão para mostrar hierarquia completa
-    local btnShowHierarchy = CreateFrame("Button", nil, panel, "GameMenuButtonTemplate")
-    btnShowHierarchy:SetPoint("TOPLEFT", 230, -285)
+    local btnShowHierarchy = CreateFrame("Button", nil, scrollChild, "GameMenuButtonTemplate")
+    btnShowHierarchy:SetPoint("TOPLEFT", 230, -295)
     btnShowHierarchy:SetSize(200, 22)
     btnShowHierarchy:SetText(L:S("DEBUG_SHOW_HIERARCHY") or "Show Map Hierarchy")
     btnShowHierarchy:SetScript("OnClick", function()
@@ -849,37 +881,37 @@ local function CreateOptionsPanel()
     end)
 
     -- Linha separadora
-    local separator = panel:CreateTexture(nil, "ARTWORK")
+    local separator = scrollChild:CreateTexture(nil, "ARTWORK")
     separator:SetColorTexture(1, 1, 1, 0.3)
-    separator:SetPoint("TOPLEFT", 16, -310)
-    separator:SetPoint("TOPRIGHT", -16, -310)
+    separator:SetPoint("TOPLEFT", 16, -330)
+    separator:SetPoint("TOPRIGHT", -30, -330)
     separator:SetHeight(1)
 
-        -- ========== SEÇÃO ADICIONAR MOEDA/ITEM CUSTOMIZADO ==========
-    local customLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-    customLabel:SetPoint("TOPLEFT", 16, -330)
+    -- ========== SEÇÃO ADICIONAR MOEDA/ITEM CUSTOMIZADO ==========
+    local customLabel = scrollChild:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    customLabel:SetPoint("TOPLEFT", 16, -345)
     customLabel:SetText(L:S("ADD_CUSTOM_TITLE") or "Add Custom Currency/Item")
 
     -- ID Input
-    local idLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    idLabel:SetPoint("TOPLEFT", 20, -355)
+    local idLabel = scrollChild:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    idLabel:SetPoint("TOPLEFT", 16, -375)
     idLabel:SetText((L:S("ID") or "ID") .. ":")
     
-    local idInput = CreateFrame("EditBox", nil, panel, "InputBoxTemplate")
-    idInput:SetPoint("TOPLEFT", 45, -355)
-    idInput:SetSize(80, 24)
+    local idInput = CreateFrame("EditBox", nil, scrollChild, "InputBoxTemplate")
+    idInput:SetPoint("TOPLEFT", 40, -373)
+    idInput:SetSize(75, 24)
     idInput:SetAutoFocus(false)
     idInput:SetMaxLetters(50)
     idInput:SetText("")
 
     -- Category Dropdown
-    local catLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    catLabel:SetPoint("TOPLEFT", 140, -355)
+    local catLabel = scrollChild:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    catLabel:SetPoint("TOPLEFT", 130, -375)
     catLabel:SetText((L:S("CATEGORY") or "Category") .. ":")
     
-    local catDropdown = CreateFrame("Frame", "MC_CategoryDropdown", panel, "UIDropDownMenuTemplate")
-    catDropdown:SetPoint("TOPLEFT", 195, -350)
-    UIDropDownMenu_SetWidth(catDropdown, 140)
+    local catDropdown = CreateFrame("Frame", "MC_CategoryDropdown", scrollChild, "UIDropDownMenuTemplate")
+    catDropdown:SetPoint("TOPLEFT", 185, -370)
+    UIDropDownMenu_SetWidth(catDropdown, 130)
     
     local function InitializeCategoryDropdown(frame, level)
         local categoriesList = GetCategoryList()
@@ -906,13 +938,13 @@ local function CreateOptionsPanel()
     end
 
     -- Type Dropdown
-        local typeLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    typeLabel:SetPoint("TOPLEFT", 370, -355)
+    local typeLabel = scrollChild:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    typeLabel:SetPoint("TOPLEFT", 360, -375)
     typeLabel:SetText((L:S("TYPE") or "Type") .. ":")
     
-    local typeDropdown = CreateFrame("Frame", "MC_TypeDropdown", panel, "UIDropDownMenuTemplate")
-    typeDropdown:SetPoint("TOPLEFT", 410, -350)
-    UIDropDownMenu_SetWidth(typeDropdown, 90)
+    local typeDropdown = CreateFrame("Frame", "MC_TypeDropdown", scrollChild, "UIDropDownMenuTemplate")
+    typeDropdown:SetPoint("TOPLEFT", 400, -370)
+    UIDropDownMenu_SetWidth(typeDropdown, 85)
     
     local function InitializeTypeDropdown(frame, level)
         local info = UIDropDownMenu_CreateInfo()
@@ -943,7 +975,7 @@ local function CreateOptionsPanel()
     -- ==========================================================
     -- AUTOCOMPLETAR / BUSCAR ITENS DA MOCHILA
     -- ==========================================================
-    local suggestFrame = CreateFrame("Frame", "MC_ItemSuggestFrame", panel, "BackdropTemplate")
+    local suggestFrame = CreateFrame("Frame", "MC_ItemSuggestFrame", scrollChild, "BackdropTemplate")
     suggestFrame:SetPoint("TOPLEFT", idInput, "BOTTOMLEFT", 0, 0)
     suggestFrame:SetSize(220, 100)
     suggestFrame:SetBackdrop({
@@ -953,7 +985,7 @@ local function CreateOptionsPanel()
         insets = { left = 4, right = 4, top = 4, bottom = 4 }
     })
     suggestFrame:SetBackdropColor(0, 0, 0, 0.9)
-    suggestFrame:SetFrameLevel(100)
+    suggestFrame:SetFrameLevel(scrollChild:GetFrameLevel() + 50)
     suggestFrame:Hide()
 
     local suggestButtons = {}
@@ -981,11 +1013,9 @@ local function CreateOptionsPanel()
                 idInput:SetText(tostring(self.itemID))
                 suggestFrame:Hide()
                 idInput:ClearFocus()
-                -- Já altera o tipo para Item automaticamente
                 UIDropDownMenu_SetSelectedValue(typeDropdown, "item")
                 UIDropDownMenu_SetText(typeDropdown, L:S("TYPE_ITEM") or "Item")
                 
-                -- Detecta a expansão automaticamente
                 local expacID = select(15, C_Item.GetItemInfo(self.itemID))
                 if expacID then
                     local expacName = ""
@@ -1004,7 +1034,6 @@ local function CreateOptionsPanel()
                     
                     local catStr = expacName ~= "" and (expacName .. " - " .. (L:S("ITEMS") or "Items")) or (L:S("ANCIENT_ITEMS") or "Items - Ancient")
                     
-                    -- Atualiza o dropdown da Categoria com a expansão detectada
                     UIDropDownMenu_SetSelectedValue(catDropdown, catStr)
                     UIDropDownMenu_SetText(catDropdown, catStr)
                 end
@@ -1014,7 +1043,6 @@ local function CreateOptionsPanel()
     end
 
     local function UpdateSuggestions(text)
-        -- Ignora se for menor que 3 letras ou se o usuário já estiver digitando um ID numérico
         if not text or string.len(text) < 3 or tonumber(text) then
             suggestFrame:Hide()
             return
@@ -1024,7 +1052,6 @@ local function CreateOptionsPanel()
         local results = {}
         local foundIDs = {}
         
-        -- Vasculha as mochilas de 0 a 4 (Bags principais)
         for bag = 0, NUM_BAG_SLOTS do
             for slot = 1, C_Container.GetContainerNumSlots(bag) do
                 local info = C_Container.GetContainerItemInfo(bag, slot)
@@ -1063,15 +1090,14 @@ local function CreateOptionsPanel()
         if userInput then UpdateSuggestions(self:GetText()) end
     end)
 
-    -- Esconde as sugestões caso clique fora (usando um pequeno atraso para dar tempo de clicar no botão)
     idInput:SetScript("OnEditFocusLost", function(self)
         C_Timer.After(0.2, function() if suggestFrame then suggestFrame:Hide() end end)
     end)
 
-        -- Add Button
-    local addButton = CreateFrame("Button", nil, panel, "GameMenuButtonTemplate")
-    addButton:SetPoint("TOPLEFT", 520, -353)
-    addButton:SetSize(80, 26)
+    -- Add Button
+    local addButton = CreateFrame("Button", nil, scrollChild, "GameMenuButtonTemplate")
+    addButton:SetPoint("TOPLEFT", 510, -373)
+    addButton:SetSize(70, 26)
     addButton:SetText(L:S("BTN_ADD") or "Add")
     addButton:SetScript("OnClick", function()
         local id = tonumber(idInput:GetText())
@@ -1087,7 +1113,6 @@ local function CreateOptionsPanel()
             return
         end
         
-        -- Verifica se já existe
         for _, item in ipairs(MyCurrenciesDB.customItems) do
             if item.id == id then
                 print("|cFFFF0000" .. (L:S("ERROR_ID_EXISTS") or "Error: This ID already exists") .. "|r")
@@ -1095,7 +1120,6 @@ local function CreateOptionsPanel()
             end
         end
         
-        -- Obter nome da moeda/item
         local name = L:S("CUSTOM") or "Custom"
         if itemType == "currency" then
             local info = C_CurrencyInfo.GetBasicCurrencyInfo(id)
@@ -1105,7 +1129,6 @@ local function CreateOptionsPanel()
             if itemName then name = itemName end
         end
         
-        -- Adiciona
         table.insert(MyCurrenciesDB.customItems, {
             id = id,
             cat = cat,
@@ -1119,13 +1142,19 @@ local function CreateOptionsPanel()
         UpdateDisplay()
         print("|cFF00FF00" .. (L:S("ADDED") or "Added:") .. " " .. name .. "|r")
         
-        -- Limpa inputs
         idInput:SetText("")
     end)
 
-        -- Search Box
-    local searchBox = CreateFrame("EditBox", "MC_SearchBox", panel, "SearchBoxTemplate")
-    searchBox:SetPoint("TOPLEFT", 20, -390)
+    -- Linha separadora 2
+    local separator2 = scrollChild:CreateTexture(nil, "ARTWORK")
+    separator2:SetColorTexture(1, 1, 1, 0.3)
+    separator2:SetPoint("TOPLEFT", 16, -415)
+    separator2:SetPoint("TOPRIGHT", -30, -415)
+    separator2:SetHeight(1)
+
+    -- Search Box
+    local searchBox = CreateFrame("EditBox", "MC_SearchBox", scrollChild, "SearchBoxTemplate")
+    searchBox:SetPoint("TOPLEFT", 16, -435)
     searchBox:SetSize(200, 20)
     searchBox:SetAutoFocus(false)
     if searchBox.Instructions then
@@ -1138,16 +1167,8 @@ local function CreateOptionsPanel()
         UpdateOptionsList(self:GetText())
     end)
 
-            local scrollFrame = CreateFrame("ScrollFrame", "MC_ScrollFrame", panel, "UIPanelScrollFrameTemplate")
-    scrollFrame:SetPoint("TOPLEFT", 20, -420)
-    scrollFrame:SetPoint("BOTTOMRIGHT", -30, 20)
-    
-    scrollChild = CreateFrame("Frame")
-    scrollFrame:SetScrollChild(scrollChild)
-    scrollChild:SetSize(panel:GetWidth()-50, 2000)
-
     local cbAll = CreateFrame("CheckButton", nil, scrollChild, "UICheckButtonTemplate")
-    cbAll:SetPoint("TOPLEFT", 0, 0)
+    cbAll:SetPoint("TOPLEFT", 230, -432)
     cbAll.text:SetText("|cFF00FF00" .. L:S("SELECT_ALL") .. "|r")
     cbAll:SetChecked(true)
     cbAll:SetScript("OnClick", function(self)
@@ -1159,7 +1180,6 @@ local function CreateOptionsPanel()
         UpdateDisplay()
     end)
 
-    -- Inicializa a lista de opções
     UpdateOptionsList()
 
     if Settings and Settings.RegisterCanvasLayoutCategory then
@@ -1213,7 +1233,16 @@ f:SetScript("OnEvent", function(self, event, arg1)
         else
             UpdateDisplay()
         end
-        elseif event == "GET_ITEM_INFO_RECEIVED" then
+    elseif event == "CURRENCY_DISPLAY_UPDATE" then
+        if isInitialized then
+            LoadGameCurrencies()
+            UpdateLocalizedNames()
+            if optionsPanel and optionsPanel:IsShown() then
+                UpdateOptionsList(MC_SearchBox and MC_SearchBox:GetText() or "")
+            end
+            UpdateDisplay()
+        end
+    elseif event == "GET_ITEM_INFO_RECEIVED" then
         if isInitialized then UpdateLocalizedNames() end
     elseif event == "ZONE_CHANGED_NEW_AREA" then
         if isInitialized then
