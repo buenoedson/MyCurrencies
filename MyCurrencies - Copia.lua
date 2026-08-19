@@ -150,159 +150,9 @@ end
 
 local trackedData = {}
 
--- Mapeamento de cabeçalhos do C_CurrencyInfo → expansão canônica.
--- Os cabeçalhos retornados pelo jogo são nomes de zonas/continentes/categorias,
--- nunca o nome da expansão diretamente.
-local HEADER_TO_EXPANSION = {
-    -- Midnight (12.0)
-    ["midnight"]            = "Midnight",
-    ["eversong woods"]      = "Midnight",
-    ["silvermoon"]          = "Midnight",
-    ["harandar"]            = "Midnight",
-    ["zul'aman"]            = "Midnight",
-    ["atal'aman"]           = "Midnight",
-    ["voidstorm"]           = "Midnight",
-
-    -- The War Within (11.x)
-    ["the war within"]      = "The War Within",
-    ["war within"]          = "The War Within",
-    ["khaz algar"]          = "The War Within",
-    ["isle of dorn"]        = "The War Within",
-    ["the ringing deeps"]   = "The War Within",
-    ["hallowfall"]          = "The War Within",
-    ["azj-kahet"]           = "The War Within",
-    ["city of threads"]     = "The War Within",
-    ["dornogal"]            = "The War Within",
-    ["undermine"]           = "The War Within",
-
-    -- Dragonflight (10.x)
-    ["dragonflight"]        = "Dragonflight",
-    ["dragon isles"]        = "Dragonflight",
-    ["the waking shores"]   = "Dragonflight",
-    ["ohn'ahran plains"]    = "Dragonflight",
-    ["the azure span"]      = "Dragonflight",
-    ["thaldraszus"]         = "Dragonflight",
-    ["valdrakken"]          = "Dragonflight",
-    ["the forbidden reach"] = "Dragonflight",
-    ["zaralek cavern"]      = "Dragonflight",
-    ["emerald dream"]       = "Dragonflight",
-
-    -- Shadowlands (9.x)
-    ["shadowlands"]         = "Shadowlands",
-    ["oribos"]              = "Shadowlands",
-    ["bastion"]             = "Shadowlands",
-    ["maldraxxus"]          = "Shadowlands",
-    ["ardenweald"]          = "Shadowlands",
-    ["revendreth"]          = "Shadowlands",
-    ["the maw"]             = "Shadowlands",
-    ["korthia"]             = "Shadowlands",
-    ["zereth mortis"]       = "Shadowlands",
-    ["torghast"]            = "Shadowlands",
-
-    -- Battle for Azeroth (8.x)
-    ["battle for azeroth"]  = "Battle for Azeroth",
-    ["zandalar"]            = "Battle for Azeroth",
-    ["kul tiras"]           = "Battle for Azeroth",
-    ["zuldazar"]            = "Battle for Azeroth",
-    ["nazmir"]              = "Battle for Azeroth",
-    ["vol'dun"]             = "Battle for Azeroth",
-    ["boralus"]             = "Battle for Azeroth",
-    ["mechagon"]            = "Battle for Azeroth",
-    ["nazjatar"]            = "Battle for Azeroth",
-
-    -- Legion (7.x)
-    ["legion"]              = "Legion",
-    ["broken isles"]        = "Legion",
-    ["dalaran"]             = "Legion",
-    ["azsuna"]              = "Legion",
-    ["val'sharah"]          = "Legion",
-    ["highmountain"]        = "Legion",
-    ["stormheim"]           = "Legion",
-    ["suramar"]             = "Legion",
-    ["argus"]               = "Legion",
-
-    -- Warlords of Draenor (6.x)
-    ["warlords of draenor"] = "Warlords of Draenor",
-    ["draenor"]             = "Warlords of Draenor",
-    ["frostfire ridge"]     = "Warlords of Draenor",
-    ["shadowmoon valley"]   = "Warlords of Draenor",
-    ["gorgrond"]            = "Warlords of Draenor",
-    ["talador"]             = "Warlords of Draenor",
-    ["spires of arak"]      = "Warlords of Draenor",
-    ["nagrand"]             = "Warlords of Draenor",
-    ["tanaan jungle"]       = "Warlords of Draenor",
-
-    -- Mists of Pandaria (5.x)
-    ["mists of pandaria"]   = "Mists of Pandaria",
-    ["pandaria"]            = "Mists of Pandaria",
-    ["the jade forest"]     = "Mists of Pandaria",
-    ["valley of the four winds"] = "Mists of Pandaria",
-    ["kun-lai summit"]      = "Mists of Pandaria",
-    ["townlong steppes"]    = "Mists of Pandaria",
-    ["dread wastes"]        = "Mists of Pandaria",
-
-    -- Cataclysm (4.x)
-    ["cataclysm"]           = "Cataclysm",
-
-    -- Wrath of the Lich King (3.x)
-    ["wrath of the lich king"] = "Wrath of the Lich King",
-    ["northrend"]           = "Wrath of the Lich King",
-    ["icecrown"]            = "Wrath of the Lich King",
-    ["storm peaks"]         = "Wrath of the Lich King",
-    ["zul'drak"]            = "Wrath of the Lich King",
-
-    -- Burning Crusade (2.x)
-    ["burning crusade"]     = "Burning Crusade",
-    ["outland"]             = "Burning Crusade",
-    ["hellfire peninsula"]  = "Burning Crusade",
-}
-
--- Retorna o nome canônico de expansão a partir de um cabeçalho do C_CurrencyInfo.
--- Primeiro tenta correspondência exata, depois substring.
-local function DetectExpansionFromString(str)
-    if not str then return nil end
-    local strL = string.lower(str)
-    -- Exato
-    if HEADER_TO_EXPANSION[strL] then return HEADER_TO_EXPANSION[strL] end
-    -- Substring (ex: "Khaz Algar - Season 2" → contém "khaz algar")
-    for header, exp in pairs(HEADER_TO_EXPANSION) do
-        if string.find(strL, header, 1, true) then
-            return exp
-        end
-    end
-    return nil
-end
-
--- Cabeçalhos globais onde não devemos inferir expansão (exibir em qualquer lugar se autoFilterRegion estiver ativo)
-local function IsNeutralHeader(headerName)
-    if not headerName then return false end
-    local h = string.lower(headerName)
-    if string.find(h, "player vs%. player") or string.find(h, "jogador x jogador") or string.find(h, "pvp") then return true end
-    if string.find(h, "miscellaneous") or string.find(h, "diversos") then return true end
-    if string.find(h, "warband") or string.find(h, "bando de guerra") then return true end
-    if string.find(h, "trading post") or string.find(h, "posto comercial") then return true end
-    if string.find(h, "dungeon") or string.find(h, "masmorra") or string.find(h, "raid") then return true end
-    if string.find(h, "antigos") or string.find(h, "ancient") or string.find(h, "legacy") or string.find(h, "legado") then return true end
-    return false
-end
-
--- Fallback incrivelmente confiável: classifica a expansão com base no ID sequencial da moeda.
-local function GetExpansionFallbackByCurrencyID(id)
-    if not id then return nil end
-    if id >= 3300 then return "Midnight" end
-    if id >= 2400 then return "The War Within" end
-    if id >= 2000 then return "Dragonflight" end
-    if id >= 1800 then return "Shadowlands" end
-    if id >= 1550 then return "Battle for Azeroth" end
-    if id >= 1100 then return "Legion" end
-    if id >= 800  then return "Warlords of Draenor" end
-    if id >= 600  then return "Mists of Pandaria" end
-    if id >= 400  then return "Cataclysm" end
-    if id >= 300  then return "Wrath of the Lich King" end
-    if id >= 100  then return "Burning Crusade" end
-    return "Classic"
-end
-
+-- ============================================================================
+-- SCANNER DINÂMICO DE MOEDAS COM SUPORTE A SUBCATEGORIAS E DESDUPLICAÇÃO
+-- ============================================================================
 local function LoadGameCurrencies()
     trackedData = {}
     local finalData = {}
@@ -310,47 +160,47 @@ local function LoadGameCurrencies()
     
     local manualData = {
         -- ITENS E MOEDAS OCULTAS - MIDNIGHT
-        { cat = L:S("MIDNIGHT") .. " - " .. L:S("HIDDEN_CURRENCY"), expansion = "Midnight", type = 'currency', id = 3378, name = "Dawnlight Manaflux" },
-        { cat = L:S("MIDNIGHT") .. " - " .. L:S("ITEMS"), expansion = "Midnight", type = 'item', id = 246951, name = "Stormarion Core" },
+        { cat = L:S("MIDNIGHT") .. " - " .. L:S("HIDDEN_CURRENCY"), type = 'currency', id = 3378, name = "Dawnlight Manaflux" },
+        { cat = L:S("MIDNIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 246951, name = "Stormarion Core" },
         
         -- The War Within - Itens
-        { cat = L:S("THE_WAR_WITHIN") .. " - " .. L:S("ITEMS"), expansion = "The War Within", type = 'item', id = 210814, name = "Artisan's Acuity" },
-        { cat = L:S("THE_WAR_WITHIN") .. " - " .. L:S("ITEMS"), expansion = "The War Within", type = 'item', id = 245653, name = "Coffer Key Shard", threshold = 100 }, 
-        { cat = L:S("THE_WAR_WITHIN") .. " - " .. L:S("ITEMS"), expansion = "The War Within", type = 'item', id = 234741, name = "Miscellaneous Mechanica" },
-        { cat = L:S("THE_WAR_WITHIN") .. " - " .. L:S("ITEMS"), expansion = "The War Within", type = 'item', id = 212493, name = "Odd Glob of Wax" },
-        { cat = L:S("THE_WAR_WITHIN") .. " - " .. L:S("ITEMS"), expansion = "The War Within", type = 'item', id = 206350, name = "Radiant Remnant" },
-        { cat = L:S("THE_WAR_WITHIN") .. " - " .. L:S("ITEMS"), expansion = "The War Within", type = 'item', id = 225557, name = "Sizzling Cinderpollen" },
-        { cat = L:S("THE_WAR_WITHIN") .. " - " .. L:S("HIDDEN_CURRENCY"), expansion = "The War Within", type = 'currency', id = 3269, name = "Ethereal Voidsplinter" },
+        { cat = L:S("THE_WAR_WITHIN") .. " - " .. L:S("ITEMS"), type = 'item', id = 210814, name = "Artisan's Acuity" },
+        { cat = L:S("THE_WAR_WITHIN") .. " - " .. L:S("ITEMS"), type = 'item', id = 245653, name = "Coffer Key Shard", threshold = 100 }, 
+        { cat = L:S("THE_WAR_WITHIN") .. " - " .. L:S("ITEMS"), type = 'item', id = 234741, name = "Miscellaneous Mechanica" },
+        { cat = L:S("THE_WAR_WITHIN") .. " - " .. L:S("ITEMS"), type = 'item', id = 212493, name = "Odd Glob of Wax" },
+        { cat = L:S("THE_WAR_WITHIN") .. " - " .. L:S("ITEMS"), type = 'item', id = 206350, name = "Radiant Remnant" },
+        { cat = L:S("THE_WAR_WITHIN") .. " - " .. L:S("ITEMS"), type = 'item', id = 225557, name = "Sizzling Cinderpollen" },
+        { cat = L:S("THE_WAR_WITHIN") .. " - " .. L:S("HIDDEN_CURRENCY"), type = 'currency', id = 3269, name = "Ethereal Voidsplinter" },
         
         -- Dragonflight - Itens
-        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), expansion = "Dragonflight", type = 'item', id = 204988, name = "Barter Brick" },
-        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), expansion = "Dragonflight", type = 'item', id = 205984, name = "Barter Boulder" },
-        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), expansion = "Dragonflight", type = 'item', id = 199198, name = "Centaur Hunting Trophy" },
-        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), expansion = "Dragonflight", type = 'item', id = 202058, name = "Copper Coin of the Isles" },
-        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), expansion = "Dragonflight", type = 'item', id = 202102, name = "Coveted Bauble" },
-        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), expansion = "Dragonflight", type = 'item', id = 204726, name = "Dormant Primordial Fragment" },
-        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), expansion = "Dragonflight", type = 'item', id = 190453, name = "Dragon Isles Artifact" },
-        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), expansion = "Dragonflight", type = 'item', id = 208151, name = "Dreamsurge Coalescence" },
-        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), expansion = "Dragonflight", type = 'item', id = 205246, name = "Essence of The Storm" },
-        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), expansion = "Dragonflight", type = 'item', id = 208066, name = "Gigantic Dreamseed" },
-        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), expansion = "Dragonflight", type = 'item', id = 202059, name = "Gold Coin of the Isles" },
-        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), expansion = "Dragonflight", type = 'item', id = 191264, name = "Greater Obsidian Key" },
-        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), expansion = "Dragonflight", type = 'item', id = 193201, name = "Key Fragments" },
-        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), expansion = "Dragonflight", type = 'item', id = 191251, name = "Key Framing" },
-        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), expansion = "Dragonflight", type = 'item', id = 190330, name = "Mark of Sargha" },
-        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), expansion = "Dragonflight", type = 'item', id = 199066, name = "Magmote" },
-        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), expansion = "Dragonflight", type = 'item', id = 208067, name = "Plump Dreamseed" },
-        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), expansion = "Dragonflight", type = 'item', id = 191263, name = "Restored Obsidian Key" },
-        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), expansion = "Dragonflight", type = 'item', id = 199906, name = "Sacred Tuskarr Totem" },
-        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), expansion = "Dragonflight", type = 'item', id = 190328, name = "Sargha's Signet" },
-        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), expansion = "Dragonflight", type = 'item', id = 210986, name = "Seedbloom" },
-        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), expansion = "Dragonflight", type = 'item', id = 202060, name = "Silver Coin of the Isles" },
-        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), expansion = "Dragonflight", type = 'item', id = 208047, name = "Small Dreamseed" },
-        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), expansion = "Dragonflight", type = 'item', id = 199905, name = "Titan Relic" },
-        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), expansion = "Dragonflight", type = 'item', id = 202196, name = "Unearthed Fragrant Coin" },
-        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), expansion = "Dragonflight", type = 'item', id = 203422, name = "Zskera Vault Key" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 204988, name = "Barter Brick" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 205984, name = "Barter Boulder" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 199198, name = "Centaur Hunting Trophy" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 202058, name = "Copper Coin of the Isles" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 202102, name = "Coveted Bauble" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 204726, name = "Dormant Primordial Fragment" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 190453, name = "Dragon Isles Artifact" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 208151, name = "Dreamsurge Coalescence" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 205246, name = "Essence of The Storm" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 208066, name = "Gigantic Dreamseed" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 202059, name = "Gold Coin of the Isles" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 191264, name = "Greater Obsidian Key" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 193201, name = "Key Fragments" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 191251, name = "Key Framing" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 190330, name = "Mark of Sargha" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 199066, name = "Magmote" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 208067, name = "Plump Dreamseed" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 191263, name = "Restored Obsidian Key" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 199906, name = "Sacred Tuskarr Totem" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 190328, name = "Sargha's Signet" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 210986, name = "Seedbloom" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 202060, name = "Silver Coin of the Isles" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 208047, name = "Small Dreamseed" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 199905, name = "Titan Relic" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 202196, name = "Unearthed Fragrant Coin" },
+        { cat = L:S("DRAGONFLIGHT") .. " - " .. L:S("ITEMS"), type = 'item', id = 203422, name = "Zskera Vault Key" },
 
-        -- ITENS - SHADOWLANDS E ANTIGOS (sem expansão → sempre visíveis)
+        -- ITENS - SHADOWLANDS E ANTIGOS
         { cat = L:S("ANCIENT_ITEMS"), type = 'item', id = 187440, name = "Attendant's Token of Merit" },
         { cat = L:S("ANCIENT_ITEMS"), type = 'item', id = 188657, name = "Genesis Mote" },
         { cat = L:S("ANCIENT_ITEMS"), type = 'item', id = 188959, name = "Sandworn Relic" },
@@ -365,7 +215,6 @@ local function LoadGameCurrencies()
             foundKeys[key] = true
             table.insert(finalData, {
                 cat = mData.cat,
-                expansion = mData.expansion,  -- campo canônico de expansão
                 type = mData.type or 'item',
                 id = mData.id,
                 name = mData.name,
@@ -395,10 +244,8 @@ local function LoadGameCurrencies()
     end
 
     -- Escaneia moedas da API C_CurrencyInfo
-    -- O cabeçalho pai pode ter nome de expansão: usamos DetectExpansionFromString para preencher 'expansion'
     local currentMainCat = "Moedas"
     local currentCat = "Moedas"
-    local currentExpansion = nil  -- expansão detectada a partir do cabeçalho atual
     local totalItems = C_CurrencyInfo.GetCurrencyListSize()
     
     for i = 1, totalItems do
@@ -408,12 +255,9 @@ local function LoadGameCurrencies()
                 local lowerName = string.lower(info.name or "")
                 if string.find(lowerName, "season") or string.find(lowerName, "temporada") or string.find(lowerName, "série") or string.find(lowerName, "serie") then
                     currentCat = currentMainCat .. " - " .. (info.name or "")
-                    -- subcabeçalho de season herda a expansão do pai
                 else
                     currentMainCat = info.name or "Moedas"
                     currentCat = info.name or "Moedas"
-                    -- Tenta detectar expansão pelo nome do cabeçalho principal
-                    currentExpansion = DetectExpansionFromString(info.name)
                 end
             else
                 local currencyID = info.currencyID
@@ -428,16 +272,8 @@ local function LoadGameCurrencies()
                     local key = "currency:" .. currencyID
                     if not foundKeys[key] then
                         foundKeys[key] = true
-                        
-                        local expan = currentExpansion
-                        -- Se o cabeçalho não mapeou para uma expansão e não é um cabeçalho global neutro, inferimos pelo ID
-                        if not expan and not IsNeutralHeader(currentMainCat) then
-                            expan = GetExpansionFallbackByCurrencyID(currencyID)
-                        end
-                        
                         table.insert(finalData, {
                             cat = currentCat,
-                            expansion = expan,  -- será nil para PvP, Miscellaneous, Warband
                             type = 'currency',
                             id = currencyID,
                             name = info.name or ("Currency " .. currencyID)
@@ -473,7 +309,6 @@ local function LoadGameCurrencies()
                     foundKeys[key] = true
                     table.insert(finalData, {
                         cat = item.cat,
-                        expansion = DetectExpansionFromString(item.cat),
                         type = itemType,
                         id = item.id,
                         name = item.name or "Custom Item",
@@ -645,10 +480,16 @@ local function UpdateDisplay()
         local isEnabled = db.visibility[data.id]
         if isEnabled == nil then isEnabled = true end 
         
-        if db.autoFilterRegion and data.expansion then
-            -- Se a moeda possui uma expansão atrelada e ela difere da expansão atual do mapa, nós a escondemos.
-            -- Moedas globais/neutras (PvP, Miscellaneous) possuem data.expansion = nil e passam direto.
-            if data.expansion ~= currentExp then
+        if db.autoFilterRegion and data.cat then
+            local isCurrentExp = string.find(data.cat, currentExp)
+            local catL = string.lower(data.cat)
+            -- Atualizado para nunca esconder masmorras/raides/miscellaneous
+            local isMisc = string.find(catL, "miscellaneous") or string.find(catL, "diversos") 
+                        or string.find(catL, "antigos") or string.find(catL, string.lower(L:S("ANCIENT_ITEMS") or "")) or string.find(catL, "player vs. player") 
+                        or string.find(catL, "jogador") or string.find(catL, "dungeon") 
+                        or string.find(catL, "masmorra") or string.find(catL, "raid")
+            
+            if not (isCurrentExp or isMisc) then
                 isEnabled = false
             end
         end
@@ -657,9 +498,9 @@ local function UpdateDisplay()
             if data.type == "currency" then
                 local info = C_CurrencyInfo.GetCurrencyInfo(data.id)
                 if info then
-                    count = info.quantity or 0
+                    count = info.quantity
                     iconPath = info.iconFileID
-                    if count > 0 or info.discovered then show = true end
+                    if info.discovered and count > 0 then show = true end
                 end
             elseif data.type == "item" then
                 count = C_Item.GetItemCount(data.id, true, false, true)
