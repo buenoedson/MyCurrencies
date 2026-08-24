@@ -10,6 +10,9 @@ A simple addon for **World of Warcraft** that monitors your currencies and items
 
 - 💰 Currency tracking by expansion
 - 📦 Collectible items and hidden currencies
+- 🔀 **Custom Icon Reordering**: Hold `Ctrl` + Drag icons to reorder
+- ⚔️ **Hide in Combat**: Automatic visibility toggle during combat
+- 📜 **Full Scrollable Settings**: All options inside smooth scrollable panel
 - 🎨 Customizable (size, position, columns)
 - 🌐 **10 languages**: EN, PT, ES, FR, DE, IT, RU, ZH-CN, ZH-TW, KO
 - 🔄 Automatic language detection
@@ -93,6 +96,7 @@ enUS = { SUA_CHAVE = "Text in English", ... },
 ```
 MyCurrencies/
 ├── Localization.lua      Tabelas de tradução (10 idiomas)
+├── MapData.lua           Mapeamento de mapas e expansões
 ├── MyCurrencies.lua      Código principal
 ├── MyCurrencies.toc      Manifesto do addon
 └── README.md             Este arquivo
@@ -129,39 +133,44 @@ A simple and practical addon for **World of Warcraft** that monitors your curren
 
 - 💰 **Currency Tracking**: Monitor all in-game currencies by expansion
 - 📦 **Collectible Items**: Track special and hidden currencies
-- 🗺️ **Expansion Organization**: Categorize resources by The War Within, Dragonflight, Shadowlands, and more
-- ⚙️ **Customizable**: Adjust icon size, text, columns and position on screen
-- 🎯 **Smart Filter**: Option to show only currencies when resting
-- 📍 **Persistence**: Your settings are saved automatically
+- 🔀 **Reordenação Personalizada**: Segure `Control` e arraste qualquer ícone para alterar a ordem de exibição
+- ⚔️ **Ocultar em Combate**: Oculta a interface automaticamente durante momentos de combate
+- 📜 **Painel Totalmente Rolável**: Configurações, busca e adição de itens customizados integrados na barra de rolagem
+- 🗺️ **Organização por Expansão**: Categorize recursos por The War Within, Dragonflight, Shadowlands e mais
+- ⚙️ **Personalizável**: Ajuste tamanho do ícone, texto, colunas e posição na tela
+- 🎯 **Filtro Inteligente**: Opção para mostrar apenas moedas quando em descanso ou da expansão atual
+- 📍 **Persistência**: Suas configurações e posições são salvas automaticamente
 
-### 🚀 Installation
+### 🚀 Instalação
 
-1. Clone or download this repository
-2. Extract the `MyCurrencies` folder to:
+1. Clone ou baixe este repositório
+2. Extraia a pasta `MyCurrencies` para:
    ```
    World of Warcraft\_retail_\Interface\AddOns\
    ```
-3. Restart WoW or run `/reload`
-4. The addon will appear on screen with your currencies
+3. Reinicie o WoW ou execute `/reload`
+4. O addon aparecerá na tela com suas moedas
 
-### 📖 How to Use
+### 📖 Como Usar
 
-**Basic Commands:**
+**Comandos Básicos:**
 ```
-/mycurrencies    - Open main panel
-/mycurrencies toggle - Toggle visibility
-/mycurrencies reset - Reset to default position
+/mycurrencies    - Abre o painel principal
+/mycurrencies toggle - Alterna a visibilidade
+/mycurrencies reset - Reseta para a posição padrão
 ```
 
-**Settings:**
-- **Icon Size**: Adjust currency icon size (default: 32px)
-- **Text Size**: Customize font size (default: 12px)
-- **Columns**: Define how many columns to display (default: 10)
-- **Show Only Resting**: Enable to see only when at rest
+**Configurações:**
+- **Tamanho do Ícone**: Ajusta o tamanho dos ícones das moedas (padrão: 32px)
+- **Tamanho do Texto**: Customiza a fonte da quantidade (padrão: 12px)
+- **Mostrar Apenas em Descanso**: Exibe a interface somente em áreas de descanso (cidades/estalagens)
+- **Mostrar Apenas Expansão Atual**: Oculta moedas de expansões anteriores
+- **Ocultar durante o Combate**: Esconde a interface automaticamente em combate
+- **Reordenar Ícones**: Segure `Ctrl` + Clique Esquerdo em qualquer ícone para arrastá-lo e soltá-lo na posição desejada
 
-### 📦 Supported Expansions
+### 📦 Expansões Suportadas
 
-- ✨ **Midnight** (Latest expansion)
+- ✨ **Midnight** (Expansão mais recente)
 - 🌊 **The War Within**
 - 🐉 **Dragonflight**
 - 👻 **Shadowlands**
@@ -172,10 +181,10 @@ A simple and practical addon for **World of Warcraft** that monitors your curren
 - ❄️ **Wrath of the Lich King**
 - 🔮 **Burning Crusade**
 
-### 🎮 Requirements
+### 🎮 Requisitos
 
-- World of Warcraft Retail (version 12.0+)
-- Standard WoW interface
+- World of Warcraft Retail (versão 12.1.0+)
+- Interface padrão do WoW
 
 ---
 
@@ -407,6 +416,6 @@ Un addon semplice e pratico per **World of Warcraft** che monitora le tue valute
 
 ---
 
-**Versão Atual**: 2026.05.18.2  
-**Compatibilidade**: WoW Retail 12.0+  
-**Última Atualização**: Maio de 2026
+**Versão Atual**: 2026.08.24.1  
+**Compatibilidade**: WoW Retail 12.1.0+  
+**Última Atualização**: Agosto de 2026

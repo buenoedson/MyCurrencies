@@ -9,9 +9,11 @@ local defaults = {
     columns = 10,
     showOnlyResting = false,
     autoFilterRegion = false, 
+    hideInCombat = false,       -- Oculta a interface em combate
     visibility = {},
     position = nil,
     customItems = {},       -- Moedas/itens adicionados pelo usuário
+    customOrder = {},       -- Ordem customizada dos ícones pelo usuário
     debugMode = false,      -- Modo desenvolvedor: exibe ID do mapa
     debugLogUnmapped = false, -- Log automático de mapas não mapeados
 }
@@ -283,6 +285,11 @@ local function IsNeutralHeader(headerName)
     if string.find(h, "trading post") or string.find(h, "posto comercial") then return true end
     if string.find(h, "dungeon") or string.find(h, "masmorra") or string.find(h, "raid") then return true end
     if string.find(h, "antigos") or string.find(h, "ancient") or string.find(h, "legacy") or string.find(h, "legado") then return true end
+    if string.find(h, "delve") or string.find(h, "imers") then return true end
+    if string.find(h, "crest") or string.find(h, "bras") then return true end
+    if string.find(h, "feature") or string.find(h, "recurso") then return true end
+    if string.find(h, "profession") or string.find(h, "profiss") or string.find(h, "profes") then return true end
+    if string.find(h, "zone") or string.find(h, "zona") then return true end
     return false
 end
 
@@ -479,9 +486,21 @@ local function LoadGameCurrencies()
                         name = item.name or "Custom Item",
                         custom = true
                     })
-                end
-            end
+    if MyCurrenciesDB and MyCurrenciesDB.customOrder and #MyCurrenciesDB.customOrder > 0 then
+        local orderMap = {}
+        for pos, key in ipairs(MyCurrenciesDB.customOrder) do
+            orderMap[key] = pos
         end
+        table.sort(finalData, function(a, b)
+            local keyA = (a.type or 'item') .. ":" .. a.id
+            local keyB = (b.type or 'item') .. ":" .. b.id
+            local posA = orderMap[keyA] or 999999
+            local posB = orderMap[keyB] or 999999
+            if posA ~= posB then
+                return posA < posB
+            end
+            return false
+        end)
     end
 
     trackedData = finalData
@@ -549,13 +568,70 @@ local function UpdateLocalizedNames()
     end
 end
 
+local function SaveCustomOrder()
+    if not MyCurrenciesDB then return end
+    MyCurrenciesDB.customOrder = {}
+    for _, item in ipairs(trackedData) do
+        table.insert(MyCurrenciesDB.customOrder, (item.type or 'item') .. ":" .. item.id)
+    end
+end
+
+local function ReorderTrackedData(draggedData, targetData)
+    local fromIdx, toIdx
+    for idx, item in ipairs(trackedData) do
+        if item.type == draggedData.type and item.id == draggedData.id then
+            fromIdx = idx
+        end
+        if item.type == targetData.type and item.id == targetData.id then
+            toIdx = idx
+        end
+    end
+    
+    if fromIdx and toIdx and fromIdx ~= toIdx then
+        local movedItem = table.remove(trackedData, fromIdx)
+        table.insert(trackedData, toIdx, movedItem)
+        SaveCustomOrder()
+    end
+end
+
 local function CreateIconFrame(index)
     local icon = CreateFrame("Frame", nil, f)
     icon:EnableMouse(true) 
     icon:RegisterForDrag("LeftButton")
     
-    icon:SetScript("OnDragStart", function() f:StartMoving() end)
-    icon:SetScript("OnDragStop", OnDragStopHandler)
+    icon:SetScript("OnDragStart", function(self)
+        if IsControlKeyDown() then
+            self.isReordering = true
+            self:SetAlpha(0.5)
+        else
+            f:StartMoving()
+        end
+    end)
+    
+    icon:SetScript("OnDragStop", function(self)
+        if self.isReordering then
+            self.isReordering = false
+            self:SetAlpha(1.0)
+            
+            local targetFrame = nil
+            for _, otherFrame in ipairs(frames) do
+                if otherFrame:IsShown() and otherFrame ~= self and otherFrame:IsMouseOver() then
+                    targetFrame = otherFrame
+                    break
+                end
+            end
+            
+            if targetFrame and targetFrame.data and self.data then
+                ReorderTrackedData(self.data, targetFrame.data)
+                UpdateDisplay()
+                if UpdateOptionsList then
+                    UpdateOptionsList(MC_SearchBox and MC_SearchBox:GetText() or "")
+                end
+            end
+        else
+            OnDragStopHandler(f)
+        end
+    end)
     
     icon:SetScript("OnMouseUp", function(self, button)
         if button == "RightButton" then
@@ -612,6 +688,8 @@ local function CreateIconFrame(index)
         else
             GameTooltip:SetCurrencyByID(self.data.id)
         end
+        GameTooltip:AddLine(" ")
+        GameTooltip:AddLine(L:S("REORDER_HINT") or "|cFF808080Segure Ctrl + Arraste para reordenar|r", 0.8, 0.8, 0.8, true)
         GameTooltip:Show()
     end)
     
@@ -627,6 +705,11 @@ local function UpdateDisplay()
     if not MyCurrenciesDB then return end
     local db = MyCurrenciesDB
     
+    if db.hideInCombat and InCombatLockdown() then
+        f:Hide()
+        return
+    end
+
     if db.showOnlyResting and not IsResting() then
         f:Hide()
         return
@@ -741,7 +824,7 @@ local function UpdateOptionsList(filterText)
     for _, cb in ipairs(catCheckboxes) do cb:Hide() end
     for _, btn in pairs(removeButtons) do btn:Hide() end
     
-    local yOffset = -470
+    local yOffset = -495
     local lastCategory = ""
     local catIndex = 1
     
@@ -953,7 +1036,7 @@ local function CreateOptionsPanel()
         inputText:SetText(math.floor(value))
         UpdateDisplay() 
     end)
-    
+
     local cbRest = CreateFrame("CheckButton", nil, scrollChild, "UICheckButtonTemplate")
     cbRest:SetPoint("TOPLEFT", 16, -150)
     cbRest.text:SetText(L:S("SHOW_ONLY_RESTING"))
@@ -966,13 +1049,19 @@ local function CreateOptionsPanel()
     cbRegion:SetChecked(MyCurrenciesDB.autoFilterRegion)
     cbRegion:SetScript("OnClick", function(self) MyCurrenciesDB.autoFilterRegion = self:GetChecked() UpdateDisplay() end)
 
+    local cbCombat = CreateFrame("CheckButton", nil, scrollChild, "UICheckButtonTemplate")
+    cbCombat:SetPoint("TOPLEFT", 16, -200)
+    cbCombat.text:SetText(L:S("HIDE_IN_COMBAT") or "Ocultar durante o combate")
+    cbCombat:SetChecked(MyCurrenciesDB.hideInCombat)
+    cbCombat:SetScript("OnClick", function(self) MyCurrenciesDB.hideInCombat = self:GetChecked() UpdateDisplay() end)
+
     -- ========== SEÇÃO DEBUG / DESENVOLVEDOR ==========
     local debugLabel = scrollChild:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-    debugLabel:SetPoint("TOPLEFT", 16, -215)
+    debugLabel:SetPoint("TOPLEFT", 16, -240)
     debugLabel:SetText(L:S("DEBUG_TITLE") or "Developer / Debug")
 
     local cbDebugMode = CreateFrame("CheckButton", nil, scrollChild, "UICheckButtonTemplate")
-    cbDebugMode:SetPoint("TOPLEFT", 16, -240)
+    cbDebugMode:SetPoint("TOPLEFT", 16, -265)
     cbDebugMode.text:SetText(L:S("DEBUG_MODE") or "Debug Mode (show map ID & expansion)")
     cbDebugMode:SetChecked(MyCurrenciesDB.debugMode)
     cbDebugMode:SetScript("OnClick", function(self)
@@ -981,7 +1070,7 @@ local function CreateOptionsPanel()
     end)
 
     local cbDebugLog = CreateFrame("CheckButton", nil, scrollChild, "UICheckButtonTemplate")
-    cbDebugLog:SetPoint("TOPLEFT", 16, -265)
+    cbDebugLog:SetPoint("TOPLEFT", 16, -290)
     cbDebugLog.text:SetText(L:S("DEBUG_LOG_UNMAPPED") or "Log unmapped maps to chat")
     cbDebugLog:SetChecked(MyCurrenciesDB.debugLogUnmapped)
     cbDebugLog:SetScript("OnClick", function(self)
@@ -991,7 +1080,7 @@ local function CreateOptionsPanel()
 
     -- Botão para mostrar mapa atual no chat
     local btnShowMap = CreateFrame("Button", nil, scrollChild, "GameMenuButtonTemplate")
-    btnShowMap:SetPoint("TOPLEFT", 16, -295)
+    btnShowMap:SetPoint("TOPLEFT", 16, -320)
     btnShowMap:SetSize(200, 22)
     btnShowMap:SetText(L:S("DEBUG_SHOW_MAP") or "Show Current Map Info")
     btnShowMap:SetScript("OnClick", function()
@@ -1022,7 +1111,7 @@ local function CreateOptionsPanel()
 
     -- Botão para mostrar hierarquia completa
     local btnShowHierarchy = CreateFrame("Button", nil, scrollChild, "GameMenuButtonTemplate")
-    btnShowHierarchy:SetPoint("TOPLEFT", 230, -295)
+    btnShowHierarchy:SetPoint("TOPLEFT", 230, -320)
     btnShowHierarchy:SetSize(200, 22)
     btnShowHierarchy:SetText(L:S("DEBUG_SHOW_HIERARCHY") or "Show Map Hierarchy")
     btnShowHierarchy:SetScript("OnClick", function()
@@ -1042,22 +1131,22 @@ local function CreateOptionsPanel()
     -- Linha separadora
     local separator = scrollChild:CreateTexture(nil, "ARTWORK")
     separator:SetColorTexture(1, 1, 1, 0.3)
-    separator:SetPoint("TOPLEFT", 16, -330)
-    separator:SetPoint("TOPRIGHT", -30, -330)
+    separator:SetPoint("TOPLEFT", 16, -355)
+    separator:SetPoint("TOPRIGHT", -30, -355)
     separator:SetHeight(1)
 
     -- ========== SEÇÃO ADICIONAR MOEDA/ITEM CUSTOMIZADO ==========
     local customLabel = scrollChild:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-    customLabel:SetPoint("TOPLEFT", 16, -345)
+    customLabel:SetPoint("TOPLEFT", 16, -370)
     customLabel:SetText(L:S("ADD_CUSTOM_TITLE") or "Add Custom Currency/Item")
 
     -- ID Input
     local idLabel = scrollChild:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    idLabel:SetPoint("TOPLEFT", 16, -375)
+    idLabel:SetPoint("TOPLEFT", 16, -400)
     idLabel:SetText((L:S("ID") or "ID") .. ":")
     
     local idInput = CreateFrame("EditBox", nil, scrollChild, "InputBoxTemplate")
-    idInput:SetPoint("TOPLEFT", 40, -373)
+    idInput:SetPoint("TOPLEFT", 40, -398)
     idInput:SetSize(75, 24)
     idInput:SetAutoFocus(false)
     idInput:SetMaxLetters(50)
@@ -1065,11 +1154,11 @@ local function CreateOptionsPanel()
 
     -- Category Dropdown
     local catLabel = scrollChild:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    catLabel:SetPoint("TOPLEFT", 130, -375)
+    catLabel:SetPoint("TOPLEFT", 130, -400)
     catLabel:SetText((L:S("CATEGORY") or "Category") .. ":")
     
     local catDropdown = CreateFrame("Frame", "MC_CategoryDropdown", scrollChild, "UIDropDownMenuTemplate")
-    catDropdown:SetPoint("TOPLEFT", 185, -370)
+    catDropdown:SetPoint("TOPLEFT", 185, -395)
     UIDropDownMenu_SetWidth(catDropdown, 130)
     
     local function InitializeCategoryDropdown(frame, level)
@@ -1098,11 +1187,11 @@ local function CreateOptionsPanel()
 
     -- Type Dropdown
     local typeLabel = scrollChild:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    typeLabel:SetPoint("TOPLEFT", 360, -375)
+    typeLabel:SetPoint("TOPLEFT", 360, -400)
     typeLabel:SetText((L:S("TYPE") or "Type") .. ":")
     
     local typeDropdown = CreateFrame("Frame", "MC_TypeDropdown", scrollChild, "UIDropDownMenuTemplate")
-    typeDropdown:SetPoint("TOPLEFT", 400, -370)
+    typeDropdown:SetPoint("TOPLEFT", 400, -395)
     UIDropDownMenu_SetWidth(typeDropdown, 85)
     
     local function InitializeTypeDropdown(frame, level)
@@ -1255,7 +1344,7 @@ local function CreateOptionsPanel()
 
     -- Add Button
     local addButton = CreateFrame("Button", nil, scrollChild, "GameMenuButtonTemplate")
-    addButton:SetPoint("TOPLEFT", 510, -373)
+    addButton:SetPoint("TOPLEFT", 510, -398)
     addButton:SetSize(70, 26)
     addButton:SetText(L:S("BTN_ADD") or "Add")
     addButton:SetScript("OnClick", function()
@@ -1307,13 +1396,13 @@ local function CreateOptionsPanel()
     -- Linha separadora 2
     local separator2 = scrollChild:CreateTexture(nil, "ARTWORK")
     separator2:SetColorTexture(1, 1, 1, 0.3)
-    separator2:SetPoint("TOPLEFT", 16, -415)
-    separator2:SetPoint("TOPRIGHT", -30, -415)
+    separator2:SetPoint("TOPLEFT", 16, -440)
+    separator2:SetPoint("TOPRIGHT", -30, -440)
     separator2:SetHeight(1)
 
     -- Search Box
     local searchBox = CreateFrame("EditBox", "MC_SearchBox", scrollChild, "SearchBoxTemplate")
-    searchBox:SetPoint("TOPLEFT", 16, -435)
+    searchBox:SetPoint("TOPLEFT", 16, -460)
     searchBox:SetSize(200, 20)
     searchBox:SetAutoFocus(false)
     if searchBox.Instructions then
@@ -1327,7 +1416,7 @@ local function CreateOptionsPanel()
     end)
 
     local cbAll = CreateFrame("CheckButton", nil, scrollChild, "UICheckButtonTemplate")
-    cbAll:SetPoint("TOPLEFT", 230, -432)
+    cbAll:SetPoint("TOPLEFT", 230, -457)
     cbAll.text:SetText("|cFF00FF00" .. L:S("SELECT_ALL") .. "|r")
     cbAll:SetChecked(true)
     cbAll:SetScript("OnClick", function(self)
@@ -1360,6 +1449,8 @@ f:RegisterEvent("PLAYER_ENTERING_WORLD")
 f:RegisterEvent("CURRENCY_DISPLAY_UPDATE")
 f:RegisterEvent("BAG_UPDATE")
 f:RegisterEvent("PLAYER_UPDATE_RESTING")
+f:RegisterEvent("PLAYER_REGEN_DISABLED")
+f:RegisterEvent("PLAYER_REGEN_ENABLED")
 f:RegisterEvent("GET_ITEM_INFO_RECEIVED")
 f:RegisterEvent("ZONE_CHANGED_NEW_AREA") 
 
@@ -1382,7 +1473,7 @@ f:SetScript("OnEvent", function(self, event, arg1)
     elseif event == "PLAYER_ENTERING_WORLD" then
         if not isInitialized then
             isInitialized = true
-                                    C_Timer.After(1, function()
+            C_Timer.After(1, function()
                 LoadGameCurrencies()
                 UpdateLocalizedNames()
                 CreateOptionsPanel()
@@ -1392,6 +1483,8 @@ f:SetScript("OnEvent", function(self, event, arg1)
         else
             UpdateDisplay()
         end
+    elseif event == "PLAYER_REGEN_DISABLED" or event == "PLAYER_REGEN_ENABLED" then
+        UpdateDisplay()
     elseif event == "CURRENCY_DISPLAY_UPDATE" then
         if isInitialized then
             LoadGameCurrencies()
