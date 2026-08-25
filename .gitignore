@@ -8,3 +8,5 @@ Thumbs.db
 
 # Pastas de release geradas localmente (opcional)
 .release/
+HISTORICO_SESSAO.md
+.github/

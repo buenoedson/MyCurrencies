@@ -10,7 +10,11 @@ A simple addon for **World of Warcraft** that monitors your currencies and items
 
 - 💰 Currency tracking by expansion
 - 📦 Collectible items and hidden currencies
+<<<<<<< HEAD
 - 📌 **Smart Ordering**: Custom items display first, followed by native in-game currency order
+=======
+- 🔀 **Custom Icon Reordering**: Hold `Ctrl` + Drag icons to reorder
+>>>>>>> 97998e9bdbb06070332a6f9f713cd3bb49d66258
 - ⚔️ **Hide in Combat**: Automatic visibility toggle during combat
 - 📜 **Full Scrollable Settings**: All options inside smooth scrollable panel
 - 🎨 Customizable (size, position, columns)
@@ -133,7 +137,11 @@ A simple and practical addon for **World of Warcraft** that monitors your curren
 
 - 💰 **Currency Tracking**: Monitor all in-game currencies by expansion
 - 📦 **Collectible Items**: Track special and hidden currencies
+<<<<<<< HEAD
 - 📌 **Ordenação Inteligente**: Itens personalizados aparecem primeiro, seguidos pelas moedas na ordem natural do menu do jogo
+=======
+- 🔀 **Reordenação Personalizada**: Segure `Control` e arraste qualquer ícone para alterar a ordem de exibição
+>>>>>>> 97998e9bdbb06070332a6f9f713cd3bb49d66258
 - ⚔️ **Ocultar em Combate**: Oculta a interface automaticamente durante momentos de combate
 - 📜 **Painel Totalmente Rolável**: Configurações, busca e adição de itens customizados integrados na barra de rolagem
 - 🗺️ **Organização por Expansão**: Categorize recursos por The War Within, Dragonflight, Shadowlands e mais
@@ -166,6 +174,10 @@ A simple and practical addon for **World of Warcraft** that monitors your curren
 - **Mostrar Apenas em Descanso**: Exibe a interface somente em áreas de descanso (cidades/estalagens)
 - **Mostrar Apenas Expansão Atual**: Oculta moedas de expansões anteriores
 - **Ocultar durante o Combate**: Esconde a interface automaticamente em combate
+<<<<<<< HEAD
+=======
+- **Reordenar Ícones**: Segure `Ctrl` + Clique Esquerdo em qualquer ícone para arrastá-lo e soltá-lo na posição desejada
+>>>>>>> 97998e9bdbb06070332a6f9f713cd3bb49d66258
 
 ### 📦 Expansões Suportadas
 
