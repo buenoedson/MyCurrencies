@@ -3,7 +3,7 @@
 ## Notes: Simple currency monitor.
 ## Author: buenoedson
 ## X-Curse-Project-ID: 1546009
-## Version: 2026.08.11.1
+## Version: 2026.08.24.2
 ## SavedVariables: MyCurrenciesDB
 ## IconTexture: Interface\Icons\INV_Misc_Coin_01
 
