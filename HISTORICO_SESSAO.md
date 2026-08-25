@@ -53,7 +53,16 @@
 - **Decisões:**
   - Adotar ordenação determinística automática (personalizados > moedas nativas do jogo), simplificando a interface e removendo botões de ajuste manual.
 
+### 24/08/2026: Resolução de Conflitos de Mesclagem Git
+- **Ações:**
+  - Diagnóstico e remoção de todos os marcadores de conflito git (`<<<<<<< HEAD`, `=======`, `>>>>>>>`) gerados após mesclagens/pulls nos arquivos `MyCurrencies.toc`, `Localization.lua`, `README.md` e `CHANGELOG.md`.
+  - Atualização da versão do manifesto `MyCurrencies.toc` para `2026.08.24.2`.
+  - Limpeza total do código-fonte em `MyCurrencies.lua`, consolidando a ordenação automática (itens personalizados primeiro, moedas do jogo depois) e a opção `hideInCombat`.
+- **Decisões:**
+  - Manter o código totalmente limpo e padronizado sem fragmentos de branch ou versões antigas.
+
 ### Tarefas Pendentes
 - [x] Corrigir erro de sintaxe LUA em `LoadGameCurrencies` (`'end' expected`).
 - [x] Corrigir fechamento e corpo da função `GetCategoryList`.
 - [x] Implementar ordenação automática (itens personalizados primeiro, moedas do jogo em seguida).
+- [x] Resolver todos os conflitos de mesclagem git no projeto.

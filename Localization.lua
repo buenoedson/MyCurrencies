@@ -62,11 +62,7 @@ local translations = {
         SHOW_ONLY_RESTING = "Mostrar apenas em Áreas de Descanso",
         SHOW_ONLY_EXPANSION = "Mostrar apenas moedas da expansão atual",
         HIDE_IN_COMBAT = "Ocultar durante o combate",
-<<<<<<< HEAD
-        REORDER_HINT = "Shift + Clique Esq/Dir para mover",
-=======
-        REORDER_HINT = "Segure Ctrl + Arraste para reordenar",
->>>>>>> 97998e9bdbb06070332a6f9f713cd3bb49d66258
+
         
         -- Seções
         SELECT_ALL = "[ MARCAR / DESMARCAR TUDO ]",
@@ -128,11 +124,7 @@ local translations = {
         SHOW_ONLY_RESTING = "Show only in Resting Areas",
         SHOW_ONLY_EXPANSION = "Show only currencies from current expansion",
         HIDE_IN_COMBAT = "Hide in Combat",
-<<<<<<< HEAD
-        REORDER_HINT = "Shift + Left/Right Click to move",
-=======
-        REORDER_HINT = "Hold Ctrl + Drag to reorder",
->>>>>>> 97998e9bdbb06070332a6f9f713cd3bb49d66258
+
         SELECT_ALL = "[ SELECT / DESELECT ALL ]",
         CATEGORIES_TITLE = "Currency Categories",
         MIDNIGHT = "Midnight",

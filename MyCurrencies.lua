@@ -13,7 +13,6 @@ local defaults = {
     visibility = {},
     position = nil,
     customItems = {},       -- Moedas/itens adicionados pelo usuário
-    customOrder = {},       -- Ordem customizada dos ícones pelo usuário
     debugMode = false,      -- Modo desenvolvedor: exibe ID do mapa
     debugLogUnmapped = false, -- Log automático de mapas não mapeados
 }
@@ -488,21 +487,9 @@ local function LoadGameCurrencies()
                         custom = true,
                         orderIndex = #finalData + 1
                     })
-    if MyCurrenciesDB and MyCurrenciesDB.customOrder and #MyCurrenciesDB.customOrder > 0 then
-        local orderMap = {}
-        for pos, key in ipairs(MyCurrenciesDB.customOrder) do
-            orderMap[key] = pos
-        end
-        table.sort(finalData, function(a, b)
-            local keyA = (a.type or 'item') .. ":" .. a.id
-            local keyB = (b.type or 'item') .. ":" .. b.id
-            local posA = orderMap[keyA] or 999999
-            local posB = orderMap[keyB] or 999999
-            if posA ~= posB then
-                return posA < posB
+                end
             end
-            return false
-        end)
+        end
     end
 
     -- Ordenação automática: Itens personalizados primeiro, depois ordem natural das moedas do jogo
@@ -580,70 +567,13 @@ local function UpdateLocalizedNames()
     end
 end
 
-local function SaveCustomOrder()
-    if not MyCurrenciesDB then return end
-    MyCurrenciesDB.customOrder = {}
-    for _, item in ipairs(trackedData) do
-        table.insert(MyCurrenciesDB.customOrder, (item.type or 'item') .. ":" .. item.id)
-    end
-end
-
-local function ReorderTrackedData(draggedData, targetData)
-    local fromIdx, toIdx
-    for idx, item in ipairs(trackedData) do
-        if item.type == draggedData.type and item.id == draggedData.id then
-            fromIdx = idx
-        end
-        if item.type == targetData.type and item.id == targetData.id then
-            toIdx = idx
-        end
-    end
-    
-    if fromIdx and toIdx and fromIdx ~= toIdx then
-        local movedItem = table.remove(trackedData, fromIdx)
-        table.insert(trackedData, toIdx, movedItem)
-        SaveCustomOrder()
-    end
-end
-
 local function CreateIconFrame(index)
     local icon = CreateFrame("Frame", nil, f)
     icon:EnableMouse(true) 
     icon:RegisterForDrag("LeftButton")
     
-    icon:SetScript("OnDragStart", function(self)
-        if IsControlKeyDown() then
-            self.isReordering = true
-            self:SetAlpha(0.5)
-        else
-            f:StartMoving()
-        end
-    end)
-    
-    icon:SetScript("OnDragStop", function(self)
-        if self.isReordering then
-            self.isReordering = false
-            self:SetAlpha(1.0)
-            
-            local targetFrame = nil
-            for _, otherFrame in ipairs(frames) do
-                if otherFrame:IsShown() and otherFrame ~= self and otherFrame:IsMouseOver() then
-                    targetFrame = otherFrame
-                    break
-                end
-            end
-            
-            if targetFrame and targetFrame.data and self.data then
-                ReorderTrackedData(self.data, targetFrame.data)
-                UpdateDisplay()
-                if UpdateOptionsList then
-                    UpdateOptionsList(MC_SearchBox and MC_SearchBox:GetText() or "")
-                end
-            end
-        else
-            OnDragStopHandler(f)
-        end
-    end)
+    icon:SetScript("OnDragStart", function() f:StartMoving() end)
+    icon:SetScript("OnDragStop", OnDragStopHandler)
     
     icon:SetScript("OnMouseUp", function(self, button)
         if button == "RightButton" then
@@ -700,8 +630,6 @@ local function CreateIconFrame(index)
         else
             GameTooltip:SetCurrencyByID(self.data.id)
         end
-        GameTooltip:AddLine(" ")
-        GameTooltip:AddLine(L:S("REORDER_HINT") or "|cFF808080Segure Ctrl + Arraste para reordenar|r", 0.8, 0.8, 0.8, true)
         GameTooltip:Show()
     end)
     
