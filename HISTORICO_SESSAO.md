@@ -66,3 +66,18 @@
 - [x] Corrigir fechamento e corpo da função `GetCategoryList`.
 - [x] Implementar ordenação automática (itens personalizados primeiro, moedas do jogo em seguida).
 - [x] Resolver todos os conflitos de mesclagem git no projeto.
+
+### 04/09/2026: Auditoria de Sobrescrita pelo CurseForge
+- **Ações:**
+  - Auditoria completa dos arquivos do Addon após sincronização do CurseForge Client para a versão `2026.08.24.2`.
+  - Verificação de arquivos:
+    - `MyCurrencies.toc`: Intacto (Versão `2026.08.24.2`).
+    - `Localization.lua`: Intacto (Sem conflitos, chaves atualizadas).
+    - `README.md`: Intacto (Documentação de ordenação automática e hide in combat preservada).
+    - `MyCurrencies.lua`: A ordenação automática (`custom` primeiro) permaneceu intacta. No entanto, a correção de verificação de combate com `UnitAffectingCombat("player")` havia sido revertida para a versão anterior (`InCombatLockdown()` exclusivo) pela substituição do pacote `2026.08.24.2`.
+  - Reaplicação imediata da verificação `UnitAffectingCombat("player")` em `UpdateDisplay()`.
+- **Decisões:**
+  - Manter `InCombatLockdown() or UnitAffectingCombat("player")` para evitar falha no evento `PLAYER_REGEN_DISABLED`.
+
+### Tarefas Pendentes
+- [x] Reaplicar verificação `UnitAffectingCombat("player")` em `MyCurrencies.lua`.

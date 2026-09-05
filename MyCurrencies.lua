@@ -645,7 +645,8 @@ local function UpdateDisplay()
     if not MyCurrenciesDB then return end
     local db = MyCurrenciesDB
     
-    if db.hideInCombat and InCombatLockdown() then
+    local inCombat = InCombatLockdown() or UnitAffectingCombat("player")
+    if db.hideInCombat and inCombat then
         f:Hide()
         return
     end
