@@ -9,3 +9,4 @@ Thumbs.db
 # Pastas de release geradas localmente (opcional)
 .release/
 HISTORICO_SESSAO.md
+sync.ffs_db
