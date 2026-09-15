@@ -8,13 +8,15 @@ local defaults = {
     textSize = 12,
     columns = 10,
     showOnlyResting = false,
-    autoFilterRegion = false, 
-    hideInCombat = false,       -- Oculta a interface em combate
+    showOnlyCurrentExpansion = false, -- Exibir somente moedas da expansão atual do jogo
+    showOnlyMapExpansion = false,     -- Exibir somente moedas da expansão do mapa onde o personagem está
+    autoFilterRegion = false,         -- Retrocompatibilidade
+    hideInCombat = false,             -- Oculta a interface em combate
     visibility = {},
     position = nil,
-    customItems = {},       -- Moedas/itens adicionados pelo usuário
-    debugMode = false,      -- Modo desenvolvedor: exibe ID do mapa
-    debugLogUnmapped = false, -- Log automático de mapas não mapeados
+    customItems = {},                 -- Moedas/itens adicionados pelo usuário
+    debugMode = false,                -- Modo desenvolvedor: exibe ID do mapa
+    debugLogUnmapped = false,         -- Log automático de mapas não mapeados
 }
 
 -- ============================================================================
@@ -45,6 +47,33 @@ local function CreateDebugFrame()
     debugFrame.text:SetText("")
 end
 
+local EXPANSION_LOC_KEYS = {
+    ["Midnight"] = "MIDNIGHT",
+    ["The War Within"] = "THE_WAR_WITHIN",
+    ["Dragonflight"] = "DRAGONFLIGHT",
+    ["Shadowlands"] = "SHADOWLANDS",
+    ["Battle for Azeroth"] = "BATTLE_FOR_AZEROTH",
+    ["Legion"] = "LEGION",
+    ["Warlords of Draenor"] = "WARLORDS_OF_DRAENOR",
+    ["Mists of Pandaria"] = "MISTS_OF_PANDARIA",
+    ["Cataclysm"] = "CATACLYSM",
+    ["Wrath of the Lich King"] = "WRATH_OF_LICH_KING",
+    ["Burning Crusade"] = "BURNING_CRUSADE",
+    ["Classic"] = "CLASSIC",
+}
+
+local function GetLocalizedExpansion(expName)
+    if not expName then return nil end
+    local locKey = EXPANSION_LOC_KEYS[expName]
+    if locKey then
+        local text = L:S(locKey)
+        if text and text ~= locKey then
+            return text
+        end
+    end
+    return expName
+end
+
 local function GetMapHierarchyString(mapID)
     if not mapID or mapID <= 0 then return "" end
     local parts = {}
@@ -53,8 +82,10 @@ local function GetMapHierarchyString(mapID)
     while current and current > 0 and not visited[current] do
         visited[current] = true
         local info = C_Map.GetMapInfo(current)
-        local name = info and info.name or "Unknown"
-        local exp = ns.mapToExpansions[current] and (" [|cFF00FF00" .. ns.mapToExpansions[current] .. "|r]") or " [|cFFFF6B6BNONE|r]"
+        local name = info and info.name or (L:S("DEBUG_UNKNOWN") or "Unknown")
+        local rawExp = ns.mapToExpansions[current]
+        local localizedExp = rawExp and GetLocalizedExpansion(rawExp)
+        local exp = localizedExp and (" [|cFF00FF00" .. localizedExp .. "|r]") or (" [|cFFFF6B6B" .. (L:S("DEBUG_NONE") or "NONE") .. "|r]")
         table.insert(parts, 1, current .. ": " .. name .. exp)
         if info and info.parentMapID and info.parentMapID > 0 then
             current = info.parentMapID
@@ -102,6 +133,17 @@ local function UpdateDebugDisplay()
         return
     end
     
+    local inCombat = InCombatLockdown() or UnitAffectingCombat("player")
+    if MyCurrenciesDB.hideInCombat and inCombat then
+        if debugFrame then debugFrame:Hide() end
+        return
+    end
+
+    if MyCurrenciesDB.showOnlyResting and not IsResting() then
+        if debugFrame then debugFrame:Hide() end
+        return
+    end
+    
     -- Cria o debug frame sob demanda se ainda não existir
     CreateDebugFrame()
     
@@ -109,13 +151,14 @@ local function UpdateDebugDisplay()
     
     local mapID = C_Map.GetBestMapForUnit("player")
     local info = mapID and C_Map.GetMapInfo(mapID)
-    local mapName = info and info.name or "Unknown"
-    local exp = mapID and ns.GetExpansionByMapID(mapID)
+    local mapName = info and info.name or (L:S("DEBUG_UNKNOWN") or "Unknown")
+    local rawExp = mapID and ns.GetExpansionByMapID(mapID)
+    local exp = rawExp and GetLocalizedExpansion(rawExp)
     local expColor = exp and "|cFF00FF00" or "|cFFFF6B6B"
-    local expText = exp or (mapID and "NAO MAPEADO!" or "SEM MAPA!")
+    local expText = exp or (mapID and (L:S("DEBUG_UNMAPPED") or "NAO MAPEADO!") or (L:S("DEBUG_NO_MAP") or "SEM MAPA!"))
     
-    local text = "Mapa ID: |cFF00CCFF" .. (mapID or "nil") .. "|r (|cFFCCCCCC" .. mapName .. "|r)\n"
-    text = text .. "Expansao: " .. expColor .. expText .. "|r"
+    local text = (L:S("DEBUG_MAP_ID") or "Mapa ID:") .. " |cFF00CCFF" .. (mapID or "nil") .. "|r (|cFFCCCCCC" .. mapName .. "|r)\n"
+    text = text .. (L:S("DEBUG_EXPANSION") or "Expansao:") .. " " .. expColor .. expText .. "|r"
     
     -- Mostra hierarquia completa no tooltip
     debugFrame:SetScript("OnEnter", function()
@@ -124,7 +167,7 @@ local function UpdateDebugDisplay()
         GameTooltip:AddLine("|cFFFFD100" .. L:S("DEBUG_HIERARCHY_TITLE"))
         local hierarchy = GetMapHierarchyString(mapID)
         if hierarchy == "" then
-            GameTooltip:AddLine("Sem dados de mapa", 1, 1, 1, true)
+            GameTooltip:AddLine(L:S("DEBUG_NO_MAP_DATA") or "Sem dados de mapa", 1, 1, 1, true)
         else
             for line in string.gmatch(hierarchy, "[^\n]+") do
                 GameTooltip:AddLine(line, 1, 1, 1, true)
@@ -143,10 +186,38 @@ local function UpdateDebugDisplay()
     debugFrame:SetHeight(debugFrame.text:GetStringHeight() + 6)
 end
 
-local function GetCurrentExpansionCategory()
+local EXPANSION_LEVEL_NAMES = {
+    [0] = "Classic",
+    [1] = "Burning Crusade",
+    [2] = "Wrath of the Lich King",
+    [3] = "Cataclysm",
+    [4] = "Mists of Pandaria",
+    [5] = "Warlords of Draenor",
+    [6] = "Legion",
+    [7] = "Battle for Azeroth",
+    [8] = "Shadowlands",
+    [9] = "Dragonflight",
+    [10] = "The War Within",
+    [11] = "Midnight",
+}
+
+local function GetLatestGameExpansion()
+    local level = (GetServerExpansionLevel and GetServerExpansionLevel())
+        or (GetExpansionLevel and GetExpansionLevel())
+    if level and EXPANSION_LEVEL_NAMES[level] then
+        return EXPANSION_LEVEL_NAMES[level]
+    end
+    local version = select(4, GetBuildInfo()) or 110000
+    if version >= 120000 then
+        return "Midnight"
+    else
+        return "The War Within"
+    end
+end
+
+local function GetCurrentMapExpansion()
     local mapID = C_Map.GetBestMapForUnit("player")
-    local exp = ns.GetExpansionByMapID(mapID)
-    return exp or "The War Within"
+    return mapID and ns.GetExpansionByMapID(mapID)
 end
 
 local trackedData = {}
@@ -648,18 +719,21 @@ local function UpdateDisplay()
     local inCombat = InCombatLockdown() or UnitAffectingCombat("player")
     if db.hideInCombat and inCombat then
         f:Hide()
+        UpdateDebugDisplay()
         return
     end
 
     if db.showOnlyResting and not IsResting() then
         f:Hide()
+        UpdateDebugDisplay()
         return
     end
     
     local visibleCount = 0
     local PADDING = 5
     local STANDARD_TEXT_FONT = GameFontHighlightSmallOutline:GetFont()
-    local currentExp = GetCurrentExpansionCategory()
+    local latestGameExp = GetLatestGameExpansion()
+    local currentMapExp = GetCurrentMapExpansion()
     
     for i, data in ipairs(trackedData) do
         local count = 0
@@ -669,8 +743,16 @@ local function UpdateDisplay()
         local isEnabled = db.visibility[data.id]
         if isEnabled == nil then isEnabled = true end 
         
-        if db.autoFilterRegion and data.expansion then
-            if data.expansion ~= currentExp then
+        -- Filtro 1: Somente moedas da expansão atual do jogo (Midnight / The War Within)
+        if (db.showOnlyCurrentExpansion or db.autoFilterRegion) and data.expansion then
+            if data.expansion ~= latestGameExp then
+                isEnabled = false
+            end
+        end
+
+        -- Filtro 2: Somente moedas da expansão do mapa onde o personagem se encontra
+        if db.showOnlyMapExpansion and data.expansion then
+            if not currentMapExp or data.expansion ~= currentMapExp then
                 isEnabled = false
             end
         end
@@ -763,7 +845,7 @@ local function UpdateOptionsList(filterText)
     for _, cb in ipairs(catCheckboxes) do cb:Hide() end
     for _, btn in pairs(removeButtons) do btn:Hide() end
     
-    local yOffset = -495
+    local yOffset = -520
     local lastCategory = ""
     local catIndex = 1
     
@@ -982,25 +1064,39 @@ local function CreateOptionsPanel()
     cbRest:SetChecked(MyCurrenciesDB.showOnlyResting)
     cbRest:SetScript("OnClick", function(self) MyCurrenciesDB.showOnlyResting = self:GetChecked() UpdateDisplay() end)
 
-    local cbRegion = CreateFrame("CheckButton", nil, scrollChild, "UICheckButtonTemplate")
-    cbRegion:SetPoint("TOPLEFT", 16, -175)
-    cbRegion.text:SetText(L:S("SHOW_ONLY_EXPANSION"))
-    cbRegion:SetChecked(MyCurrenciesDB.autoFilterRegion)
-    cbRegion:SetScript("OnClick", function(self) MyCurrenciesDB.autoFilterRegion = self:GetChecked() UpdateDisplay() end)
+    local cbCurrentExp = CreateFrame("CheckButton", nil, scrollChild, "UICheckButtonTemplate")
+    cbCurrentExp:SetPoint("TOPLEFT", 16, -175)
+    cbCurrentExp.text:SetText(L:S("SHOW_ONLY_EXPANSION"))
+    cbCurrentExp:SetChecked(MyCurrenciesDB.showOnlyCurrentExpansion or MyCurrenciesDB.autoFilterRegion)
+    cbCurrentExp:SetScript("OnClick", function(self)
+        local state = self:GetChecked()
+        MyCurrenciesDB.showOnlyCurrentExpansion = state
+        MyCurrenciesDB.autoFilterRegion = state
+        UpdateDisplay()
+    end)
+
+    local cbMapExp = CreateFrame("CheckButton", nil, scrollChild, "UICheckButtonTemplate")
+    cbMapExp:SetPoint("TOPLEFT", 16, -200)
+    cbMapExp.text:SetText(L:S("SHOW_ONLY_MAP_EXPANSION") or "Mostrar apenas moedas da expansão do mapa atual")
+    cbMapExp:SetChecked(MyCurrenciesDB.showOnlyMapExpansion)
+    cbMapExp:SetScript("OnClick", function(self)
+        MyCurrenciesDB.showOnlyMapExpansion = self:GetChecked()
+        UpdateDisplay()
+    end)
 
     local cbCombat = CreateFrame("CheckButton", nil, scrollChild, "UICheckButtonTemplate")
-    cbCombat:SetPoint("TOPLEFT", 16, -200)
+    cbCombat:SetPoint("TOPLEFT", 16, -225)
     cbCombat.text:SetText(L:S("HIDE_IN_COMBAT") or "Ocultar durante o combate")
     cbCombat:SetChecked(MyCurrenciesDB.hideInCombat)
     cbCombat:SetScript("OnClick", function(self) MyCurrenciesDB.hideInCombat = self:GetChecked() UpdateDisplay() end)
 
     -- ========== SEÇÃO DEBUG / DESENVOLVEDOR ==========
     local debugLabel = scrollChild:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-    debugLabel:SetPoint("TOPLEFT", 16, -240)
+    debugLabel:SetPoint("TOPLEFT", 16, -265)
     debugLabel:SetText(L:S("DEBUG_TITLE") or "Developer / Debug")
 
     local cbDebugMode = CreateFrame("CheckButton", nil, scrollChild, "UICheckButtonTemplate")
-    cbDebugMode:SetPoint("TOPLEFT", 16, -265)
+    cbDebugMode:SetPoint("TOPLEFT", 16, -290)
     cbDebugMode.text:SetText(L:S("DEBUG_MODE") or "Debug Mode (show map ID & expansion)")
     cbDebugMode:SetChecked(MyCurrenciesDB.debugMode)
     cbDebugMode:SetScript("OnClick", function(self)
@@ -1009,7 +1105,7 @@ local function CreateOptionsPanel()
     end)
 
     local cbDebugLog = CreateFrame("CheckButton", nil, scrollChild, "UICheckButtonTemplate")
-    cbDebugLog:SetPoint("TOPLEFT", 16, -290)
+    cbDebugLog:SetPoint("TOPLEFT", 16, -315)
     cbDebugLog.text:SetText(L:S("DEBUG_LOG_UNMAPPED") or "Log unmapped maps to chat")
     cbDebugLog:SetChecked(MyCurrenciesDB.debugLogUnmapped)
     cbDebugLog:SetScript("OnClick", function(self)
@@ -1019,7 +1115,7 @@ local function CreateOptionsPanel()
 
     -- Botão para mostrar mapa atual no chat
     local btnShowMap = CreateFrame("Button", nil, scrollChild, "GameMenuButtonTemplate")
-    btnShowMap:SetPoint("TOPLEFT", 16, -320)
+    btnShowMap:SetPoint("TOPLEFT", 16, -345)
     btnShowMap:SetSize(200, 22)
     btnShowMap:SetText(L:S("DEBUG_SHOW_MAP") or "Show Current Map Info")
     btnShowMap:SetScript("OnClick", function()
@@ -1050,7 +1146,7 @@ local function CreateOptionsPanel()
 
     -- Botão para mostrar hierarquia completa
     local btnShowHierarchy = CreateFrame("Button", nil, scrollChild, "GameMenuButtonTemplate")
-    btnShowHierarchy:SetPoint("TOPLEFT", 230, -320)
+    btnShowHierarchy:SetPoint("TOPLEFT", 230, -345)
     btnShowHierarchy:SetSize(200, 22)
     btnShowHierarchy:SetText(L:S("DEBUG_SHOW_HIERARCHY") or "Show Map Hierarchy")
     btnShowHierarchy:SetScript("OnClick", function()
@@ -1070,22 +1166,22 @@ local function CreateOptionsPanel()
     -- Linha separadora
     local separator = scrollChild:CreateTexture(nil, "ARTWORK")
     separator:SetColorTexture(1, 1, 1, 0.3)
-    separator:SetPoint("TOPLEFT", 16, -355)
-    separator:SetPoint("TOPRIGHT", -30, -355)
+    separator:SetPoint("TOPLEFT", 16, -380)
+    separator:SetPoint("TOPRIGHT", -30, -380)
     separator:SetHeight(1)
 
     -- ========== SEÇÃO ADICIONAR MOEDA/ITEM CUSTOMIZADO ==========
     local customLabel = scrollChild:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-    customLabel:SetPoint("TOPLEFT", 16, -370)
+    customLabel:SetPoint("TOPLEFT", 16, -395)
     customLabel:SetText(L:S("ADD_CUSTOM_TITLE") or "Add Custom Currency/Item")
 
     -- ID Input
     local idLabel = scrollChild:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    idLabel:SetPoint("TOPLEFT", 16, -400)
+    idLabel:SetPoint("TOPLEFT", 16, -425)
     idLabel:SetText((L:S("ID") or "ID") .. ":")
     
     local idInput = CreateFrame("EditBox", nil, scrollChild, "InputBoxTemplate")
-    idInput:SetPoint("TOPLEFT", 40, -398)
+    idInput:SetPoint("TOPLEFT", 40, -423)
     idInput:SetSize(75, 24)
     idInput:SetAutoFocus(false)
     idInput:SetMaxLetters(50)
@@ -1093,11 +1189,11 @@ local function CreateOptionsPanel()
 
     -- Category Dropdown
     local catLabel = scrollChild:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    catLabel:SetPoint("TOPLEFT", 130, -400)
+    catLabel:SetPoint("TOPLEFT", 130, -425)
     catLabel:SetText((L:S("CATEGORY") or "Category") .. ":")
     
     local catDropdown = CreateFrame("Frame", "MC_CategoryDropdown", scrollChild, "UIDropDownMenuTemplate")
-    catDropdown:SetPoint("TOPLEFT", 185, -395)
+    catDropdown:SetPoint("TOPLEFT", 185, -420)
     UIDropDownMenu_SetWidth(catDropdown, 130)
     
     local function InitializeCategoryDropdown(frame, level)
@@ -1126,11 +1222,11 @@ local function CreateOptionsPanel()
 
     -- Type Dropdown
     local typeLabel = scrollChild:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    typeLabel:SetPoint("TOPLEFT", 360, -400)
+    typeLabel:SetPoint("TOPLEFT", 360, -425)
     typeLabel:SetText((L:S("TYPE") or "Type") .. ":")
     
     local typeDropdown = CreateFrame("Frame", "MC_TypeDropdown", scrollChild, "UIDropDownMenuTemplate")
-    typeDropdown:SetPoint("TOPLEFT", 400, -395)
+    typeDropdown:SetPoint("TOPLEFT", 400, -420)
     UIDropDownMenu_SetWidth(typeDropdown, 85)
     
     local function InitializeTypeDropdown(frame, level)
@@ -1205,24 +1301,23 @@ local function CreateOptionsPanel()
                 
                 local expacID = select(15, C_Item.GetItemInfo(self.itemID))
                 if expacID then
-                    local expacName = ""
-                    if expacID == 1 then expacName = L:S("BURNING_CRUSADE") or "Burning Crusade"
-                    elseif expacID == 2 then expacName = L:S("WRATH_OF_LICH_KING") or "Wrath of the Lich King"
-                    elseif expacID == 3 then expacName = "Cataclysm"
-                    elseif expacID == 4 then expacName = L:S("MISTS_OF_PANDARIA") or "Mists of Pandaria"
-                    elseif expacID == 5 then expacName = L:S("WARLORDS_OF_DRAENOR") or "Warlords of Draenor"
-                    elseif expacID == 6 then expacName = L:S("LEGION") or "Legion"
-                    elseif expacID == 7 then expacName = L:S("BATTLE_FOR_AZEROTH") or "Battle for Azeroth"
-                    elseif expacID == 8 then expacName = L:S("SHADOWLANDS") or "Shadowlands"
-                    elseif expacID == 9 then expacName = L:S("DRAGONFLIGHT") or "Dragonflight"
-                    elseif expacID == 10 then expacName = L:S("THE_WAR_WITHIN") or "The War Within"
-                    elseif expacID == 11 then expacName = L:S("MIDNIGHT") or "Midnight"
-                    end
-                    
-                    local catStr = expacName ~= "" and (expacName .. " - " .. (L:S("ITEMS") or "Items")) or (L:S("ANCIENT_ITEMS") or "Items - Ancient")
-                    
-                    UIDropDownMenu_SetSelectedValue(catDropdown, catStr)
-                    UIDropDownMenu_SetText(catDropdown, catStr)
+                    local expacNames = {
+                        [0] = "Classic",
+                        [1] = "Burning Crusade",
+                        [2] = "Wrath of the Lich King",
+                        [3] = "Cataclysm",
+                        [4] = "Mists of Pandaria",
+                        [5] = "Warlords of Draenor",
+                        [6] = "Legion",
+                        [7] = "Battle for Azeroth",
+                        [8] = "Shadowlands",
+                        [9] = "Dragonflight",
+                        [10] = "The War Within",
+                        [11] = "Midnight"
+                    }
+                    local targetCat = expacNames[expacID] and (expacNames[expacID] .. " - " .. (L:S("ITEMS") or "Items")) or (L:S("ITEMS") or "Items")
+                    UIDropDownMenu_SetSelectedValue(catDropdown, targetCat)
+                    UIDropDownMenu_SetText(catDropdown, targetCat)
                 end
             end
         end)
@@ -1230,23 +1325,34 @@ local function CreateOptionsPanel()
     end
 
     local function UpdateSuggestions(text)
-        if not text or string.len(text) < 3 or tonumber(text) then
+        if not text or text == "" or tonumber(text) then
             suggestFrame:Hide()
             return
         end
         
         text = string.lower(text)
         local results = {}
-        local foundIDs = {}
-        
-        for bag = 0, NUM_BAG_SLOTS do
+        for bag = 0, 4 do
             for slot = 1, C_Container.GetContainerNumSlots(bag) do
-                local info = C_Container.GetContainerItemInfo(bag, slot)
-                if info and info.itemID and info.itemName then
-                    if not foundIDs[info.itemID] and string.find(string.lower(info.itemName), text, 1, true) then
-                        table.insert(results, {id = info.itemID, name = info.itemName, icon = info.iconFileID})
-                        foundIDs[info.itemID] = true
-                        if #results >= 5 then break end
+                local itemInfo = C_Container.GetContainerItemInfo(bag, slot)
+                if itemInfo and itemInfo.itemID then
+                    local itemName = itemInfo.itemName
+                    if itemName and string.find(string.lower(itemName), text, 1, true) then
+                        local alreadyAdded = false
+                        for _, res in ipairs(results) do
+                            if res.id == itemInfo.itemID then
+                                alreadyAdded = true
+                                break
+                            end
+                        end
+                        if not alreadyAdded then
+                            table.insert(results, {
+                                id = itemInfo.itemID,
+                                name = itemName,
+                                icon = itemInfo.iconFileID
+                            })
+                            if #results >= 5 then break end
+                        end
                     end
                 end
             end
@@ -1283,7 +1389,7 @@ local function CreateOptionsPanel()
 
     -- Add Button
     local addButton = CreateFrame("Button", nil, scrollChild, "GameMenuButtonTemplate")
-    addButton:SetPoint("TOPLEFT", 510, -398)
+    addButton:SetPoint("TOPLEFT", 510, -423)
     addButton:SetSize(70, 26)
     addButton:SetText(L:S("BTN_ADD") or "Add")
     addButton:SetScript("OnClick", function()
@@ -1295,25 +1401,25 @@ local function CreateOptionsPanel()
             print("|cFFFF0000" .. (L:S("ERROR_INVALID_ID") or "Error: Invalid ID") .. "|r")
             return
         end
+        
         if not cat or cat == "" then
             print("|cFFFF0000" .. (L:S("ERROR_CATEGORY_REQUIRED") or "Error: Category required") .. "|r")
             return
         end
         
         for _, item in ipairs(MyCurrenciesDB.customItems) do
-            if item.id == id then
+            if item.id == id and (item.type or 'item') == itemType then
                 print("|cFFFF0000" .. (L:S("ERROR_ID_EXISTS") or "Error: This ID already exists") .. "|r")
                 return
             end
         end
         
-        local name = L:S("CUSTOM") or "Custom"
+        local name = "Loading..."
         if itemType == "currency" then
             local info = C_CurrencyInfo.GetBasicCurrencyInfo(id)
-            if info then name = info.name end
-        else
-            local itemName = C_Item.GetItemInfo(id)
-            if itemName then name = itemName end
+            if info and info.name then name = info.name end
+        elseif itemType == "item" then
+            name = C_Item.GetItemInfo(id) or ("Item " .. id)
         end
         
         table.insert(MyCurrenciesDB.customItems, {
@@ -1335,13 +1441,13 @@ local function CreateOptionsPanel()
     -- Linha separadora 2
     local separator2 = scrollChild:CreateTexture(nil, "ARTWORK")
     separator2:SetColorTexture(1, 1, 1, 0.3)
-    separator2:SetPoint("TOPLEFT", 16, -440)
-    separator2:SetPoint("TOPRIGHT", -30, -440)
+    separator2:SetPoint("TOPLEFT", 16, -465)
+    separator2:SetPoint("TOPRIGHT", -30, -465)
     separator2:SetHeight(1)
 
     -- Search Box
     local searchBox = CreateFrame("EditBox", "MC_SearchBox", scrollChild, "SearchBoxTemplate")
-    searchBox:SetPoint("TOPLEFT", 16, -460)
+    searchBox:SetPoint("TOPLEFT", 16, -485)
     searchBox:SetSize(200, 20)
     searchBox:SetAutoFocus(false)
     if searchBox.Instructions then
@@ -1355,7 +1461,7 @@ local function CreateOptionsPanel()
     end)
 
     local cbAll = CreateFrame("CheckButton", nil, scrollChild, "UICheckButtonTemplate")
-    cbAll:SetPoint("TOPLEFT", 230, -457)
+    cbAll:SetPoint("TOPLEFT", 230, -482)
     cbAll.text:SetText("|cFF00FF00" .. L:S("SELECT_ALL") .. "|r")
     cbAll:SetChecked(true)
     cbAll:SetScript("OnClick", function(self)
@@ -1392,6 +1498,8 @@ f:RegisterEvent("PLAYER_REGEN_DISABLED")
 f:RegisterEvent("PLAYER_REGEN_ENABLED")
 f:RegisterEvent("GET_ITEM_INFO_RECEIVED")
 f:RegisterEvent("ZONE_CHANGED_NEW_AREA") 
+f:RegisterEvent("ZONE_CHANGED")
+f:RegisterEvent("ZONE_CHANGED_INDOORS")
 
 f:SetScript("OnEvent", function(self, event, arg1)
     if event == "ADDON_LOADED" and arg1 == addonName then
@@ -1435,7 +1543,7 @@ f:SetScript("OnEvent", function(self, event, arg1)
         end
     elseif event == "GET_ITEM_INFO_RECEIVED" then
         if isInitialized then UpdateLocalizedNames() end
-    elseif event == "ZONE_CHANGED_NEW_AREA" then
+    elseif event == "ZONE_CHANGED_NEW_AREA" or event == "ZONE_CHANGED" or event == "ZONE_CHANGED_INDOORS" then
         if isInitialized then
             UpdateDisplay()
             CheckDebugOnZoneChange()

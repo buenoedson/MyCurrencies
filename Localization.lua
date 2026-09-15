@@ -61,6 +61,7 @@ local translations = {
         -- Checkboxes
         SHOW_ONLY_RESTING = "Mostrar apenas em Áreas de Descanso",
         SHOW_ONLY_EXPANSION = "Mostrar apenas moedas da expansão atual",
+        SHOW_ONLY_MAP_EXPANSION = "Mostrar apenas moedas da expansão do mapa atual",
         HIDE_IN_COMBAT = "Ocultar durante o combate",
 
         
@@ -79,6 +80,8 @@ local translations = {
         MISTS_OF_PANDARIA = "Mists of Pandaria",
         WRATH_OF_LICH_KING = "Wrath of the Lich King",
         BURNING_CRUSADE = "Burning Crusade",
+        CATACLYSM = "Cataclysm",
+        CLASSIC = "Classic",
         
         -- Categorias de moedas
         HIDDEN_CURRENCY = "Moeda oculta",
@@ -109,6 +112,13 @@ local translations = {
         DEBUG_SHOW_MAP = "Mostrar Info do Mapa Atual",
         DEBUG_SHOW_HIERARCHY = "Mostrar Hierarquia do Mapa",
         DEBUG_HIERARCHY_TITLE = "Hierarquia de Mapas:",
+        DEBUG_MAP_ID = "Mapa ID:",
+        DEBUG_EXPANSION = "Expansão:",
+        DEBUG_UNMAPPED = "NÃO MAPEADO!",
+        DEBUG_NO_MAP = "SEM MAPA!",
+        DEBUG_NO_MAP_DATA = "Sem dados de mapa",
+        DEBUG_UNKNOWN = "Desconhecido",
+        DEBUG_NONE = "NENHUM",
     },
     
     -- ENGLISH (EN-US)
@@ -123,6 +133,7 @@ local translations = {
         LANGUAGE = "Language",
         SHOW_ONLY_RESTING = "Show only in Resting Areas",
         SHOW_ONLY_EXPANSION = "Show only currencies from current expansion",
+        SHOW_ONLY_MAP_EXPANSION = "Show only currencies from current map's expansion",
         HIDE_IN_COMBAT = "Hide in Combat",
 
         SELECT_ALL = "[ SELECT / DESELECT ALL ]",
@@ -137,6 +148,8 @@ local translations = {
         MISTS_OF_PANDARIA = "Mists of Pandaria",
         WRATH_OF_LICH_KING = "Wrath of the Lich King",
         BURNING_CRUSADE = "Burning Crusade",
+        CATACLYSM = "Cataclysm",
+        CLASSIC = "Classic",
         HIDDEN_CURRENCY = "Hidden Currency",
         ITEMS = "Items",
         ANCIENT_ITEMS = "Items - Ancient",
@@ -164,6 +177,13 @@ local translations = {
         DEBUG_SHOW_MAP = "Show Current Map Info",
         DEBUG_SHOW_HIERARCHY = "Show Map Hierarchy",
         DEBUG_HIERARCHY_TITLE = "Map Hierarchy:",
+        DEBUG_MAP_ID = "Map ID:",
+        DEBUG_EXPANSION = "Expansion:",
+        DEBUG_UNMAPPED = "UNMAPPED!",
+        DEBUG_NO_MAP = "NO MAP!",
+        DEBUG_NO_MAP_DATA = "No map data",
+        DEBUG_UNKNOWN = "Unknown",
+        DEBUG_NONE = "NONE",
     },
     
     -- ESPAÑOL (ES-ES)
