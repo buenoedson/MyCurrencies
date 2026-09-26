@@ -66,3 +66,44 @@
 - [x] Corrigir fechamento e corpo da função `GetCategoryList`.
 - [x] Implementar ordenação automática (itens personalizados primeiro, moedas do jogo em seguida).
 - [x] Resolver todos os conflitos de mesclagem git no projeto.
+
+### 04/09/2026: Auditoria de Sobrescrita pelo CurseForge
+- **Ações:**
+  - Auditoria completa dos arquivos do Addon após sincronização do CurseForge Client para a versão `2026.08.24.2`.
+  - Verificação de arquivos:
+    - `MyCurrencies.toc`: Intacto (Versão `2026.08.24.2`).
+    - `Localization.lua`: Intacto (Sem conflitos, chaves atualizadas).
+    - `README.md`: Intacto (Documentação de ordenação automática e hide in combat preservada).
+    - `MyCurrencies.lua`: A ordenação automática (`custom` primeiro) permaneceu intacta. No entanto, a correção de verificação de combate com `UnitAffectingCombat("player")` havia sido revertida para a versão anterior (`InCombatLockdown()` exclusivo) pela substituição do pacote `2026.08.24.2`.
+  - Reaplicação imediata da verificação `UnitAffectingCombat("player")` em `UpdateDisplay()`.
+- **Decisões:**
+  - Manter `InCombatLockdown() or UnitAffectingCombat("player")` para evitar falha no evento `PLAYER_REGEN_DISABLED`.
+
+### Tarefas Pendentes
+- [x] Reaplicar verificação `UnitAffectingCombat("player")` em `MyCurrencies.lua`.
+
+### 05/09/2026: Sincronização de Visibilidade e Localização do Debug Frame
+- **Ações:**
+  - Atualização do `debugFrame` para obedecer rigorosamente às opções de visibilidade do usuário: `hideInCombat` (oculta ao entrar em combate) e `showOnlyResting` (exibe apenas em áreas de descanso).
+  - Chamada de `UpdateDebugDisplay()` mesmo quando o frame principal `f` é ocultado por combate ou descanso.
+  - Implementação de suporte completo a idioma no `debugFrame`: rótulos `DEBUG_MAP_ID`, `DEBUG_EXPANSION`, `DEBUG_UNMAPPED`, `DEBUG_NO_MAP`, `DEBUG_NO_MAP_DATA`, `DEBUG_UNKNOWN`, `DEBUG_NONE` e nomes de expansão traduzidos dinamicamente de acordo com o idioma selecionado (`MyCurrenciesDB.language` ou locale do jogo).
+- **Decisões:**
+  - Utilizar a função auxiliar `GetLocalizedExpansion` para traduzir o nome canônico retornado por `MapData.lua` para o idioma ativo do usuário.
+
+### Tarefas Pendentes
+- [x] Sincronizar visibilidade do `debugFrame` com combate e área de descanso.
+- [x] Localizar textos e expansões do `debugFrame` conforme idioma selecionado.
+
+### 15/09/2026: Separação de Filtros de Expansão (Atual do Jogo vs Mapa Atual)
+- **Ações:**
+  - Criação da nova opção `showOnlyMapExpansion` ("Mostrar apenas moedas da expansão do mapa atual") com checagem dinâmica via `C_Map.GetBestMapForUnit("player")` e `ns.GetExpansionByMapID(mapID)`.
+  - Diferenciação clara da opção `showOnlyCurrentExpansion` ("Mostrar apenas moedas da expansão atual"), que filtra exclusivamente pela versão mais recente/ativa do World of Warcraft (Retail: Midnight / The War Within) obtida via `GetServerExpansionLevel()` / `GetBuildInfo()`.
+  - Registro de eventos adicionais de mapa (`ZONE_CHANGED`, `ZONE_CHANGED_INDOORS`) para atualizar a filtragem imediatamente ao transitar entre subzonas, cavernas ou mapas.
+  - Atualização das tabelas de localização em `Localization.lua` com a chave `SHOW_ONLY_MAP_EXPANSION`.
+  - Reorganização do painel de opções rolável com ambos os checkboxes e ajuste das posições verticais subsequentes.
+- **Decisões:**
+  - Manter suporte retrocompatível ao identificador anterior `autoFilterRegion`.
+
+### Tarefas Pendentes
+- [x] Adicionar opção de exibir apenas moedas da expansão do mapa atual.
+- [x] Manter opção de exibir apenas moedas da expansão atual do jogo.
