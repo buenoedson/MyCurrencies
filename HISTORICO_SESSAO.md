@@ -1,5 +1,5 @@
 # Histórico de Sessão - MyCurrencies
-# Última modificação: 24/08/2026
+# Última modificação: 08/10/2026
 
 ## Informações do Projeto
 - **Cliente/Local:** buenoedson/MyCurrencies
@@ -107,3 +107,38 @@
 ### Tarefas Pendentes
 - [x] Adicionar opção de exibir apenas moedas da expansão do mapa atual.
 - [x] Manter opção de exibir apenas moedas da expansão atual do jogo.
+
+### 08/10/2026: Auditoria de Segurança, Consistência e Otimização de Performance
+- **Ações:**
+  - Correção de runtime error potencial em `select(15, C_Item.GetItemInfo(self.itemID))` substituindo por extração segura em tabela `{ C_Item.GetItemInfo(...) }`.
+  - Inclusão do slot de Reagent Bag (`Enum.BagIndex.ReagentBag` / bag 5) na varredura de sugestões em `UpdateSuggestions`.
+  - Ajuste do threshold heurístico de moedas The War Within de `>= 2400` para `>= 2800` para evitar conflito com moedas de Dragonflight (2400-2800).
+  - Adição de guarda de reentrância (`isScanningCurrencies`) em `LoadGameCurrencies()` para impedir recursão infinita acionada por eventos durante `C_CurrencyInfo.ExpandCurrencyList()`.
+  - Agrupamento de itens personalizados por categoria na ordenação determinística de `trackedData` para evitar duplicação visual de cabeçalhos de categoria na lista de opções.
+  - Substituição do armazenamento persistente desnecessário de `sessionLoggedMaps` por tabela volátil em memória (com limpeza retrocompatível em `ADDON_LOADED`).
+  - Criação de `OpenSettingsSafely()` com guarda `InCombatLockdown()` no clique direito do frame/ícones e no comando `/mc` para prevenir `ADDON_ACTION_BLOCKED` e taint de combate no Retail.
+  - Substituição do registro do evento `BAG_UPDATE` por `BAG_UPDATE_DELAYED` para eliminar picos de chamadas redundantes e perda de FPS.
+  - Migração da chave de visibilidade em `MyCurrenciesDB.visibility` para formato composto `<type>:<id>` com fallback retrocompatível por `<id>`.
+  - Sincronização do estado visual dos checkboxes de categoria de acordo com a visibilidade de todos os seus itens filhos.
+  - Desduplicação da chave `Español` em `wowLocales` e mapeamento de `esMX` para `esES`.
+  - Padronização da chave `WRATH_OF_LICH_KING` / `WRATH_OF_THE_LICH_KING` e adição de `MIDNIGHT`, `CATACLYSM` e `CLASSIC` em `ns.expansionsList` e tabelas de localização.
+  - Adição das chaves de localização faltantes em todos os idiomas (`ptBR`, `enUS`, `esES`, `frFR`, `deDE`, `itIT`, `ruRU`, `zhCN`, `zhTW`, `koKR`).
+- **Decisões:**
+  - Adotar chaves de visibilidade compostas (`type:id`) para evitar colisão entre itens e moedas com mesmo ID numérico, mantendo compatibilidade transparente com bancos salvos legados.
+  - Limpar mapas depurados (`_loggedMaps`) na memória de sessão para manter o `SavedVariables` conciso.
+  - Utilizar `BAG_UPDATE_DELAYED` em vez de múltiplos `BAG_UPDATE` sequenciais para operações de inventário.
+- **Bugs corrigidos:**
+  - Possível crash de runtime em item uncached → `select(15, nil)` lança erro `index out of range` em Lua 5.1 → extração de array com guarda nil implementada.
+  - Moedas de Dragonflight (2400–2799) classificadas incorretamente como The War Within no fallback de ID → limite inferior de TWW ajustado de 2400 para 2800.
+  - Reentrância no loop de expansão de moedas → `ExpandCurrencyList` pode disparar eventos da UI durante varredura → flag `isScanningCurrencies` adicionada.
+  - Bloqueio de ação/Taint ao abrir painel em combate via clique direito ou slash command → chamadas de Settings sem guarda em combate geram taint → `OpenSettingsSafely()` implementado com guarda de combate.
+  - Disparos massivos de evento de bolsa → `BAG_UPDATE` dispara para cada slot alterado → migrado para `BAG_UPDATE_DELAYED`.
+
+### Tarefas Pendentes
+- [x] Corrigir possíveis crashes de API e indexação de bolsas em `MyCurrencies.lua`.
+- [x] Implementar guarda contra reentrância de expansão de moedas.
+- [x] Implementar proteção contra Taint de combate ao abrir o painel de opções.
+- [x] Otimizar performance de eventos substituindo `BAG_UPDATE` por `BAG_UPDATE_DELAYED`.
+- [x] Resolver colisões de ID entre moedas e itens na visibilidade.
+- [x] Normalizar e sincronizar chaves de localização e expansões em todos os idiomas suportados.
+

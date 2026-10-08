@@ -191,6 +191,7 @@ end
 -- LISTA DE TODAS AS EXPANSOES DISPONIVEIS
 -- ============================================================================
 ns.expansionsList = {
+    { key = "MIDNIGHT",               displayName = "Midnight" },
     { key = "THE_WAR_WITHIN",         displayName = "The War Within" },
     { key = "DRAGONFLIGHT",           displayName = "Dragonflight" },
     { key = "SHADOWLANDS",            displayName = "Shadowlands" },
@@ -199,7 +200,7 @@ ns.expansionsList = {
     { key = "WARLORDS_OF_DRAENOR",    displayName = "Warlords of Draenor" },
     { key = "MISTS_OF_PANDARIA",      displayName = "Mists of Pandaria" },
     { key = "CATACLYSM",              displayName = "Cataclysm" },
-    { key = "WRATH_OF_THE_LICH_KING", displayName = "Wrath of the Lich King" },
+    { key = "WRATH_OF_LICH_KING",     displayName = "Wrath of the Lich King" },
     { key = "BURNING_CRUSADE",        displayName = "Burning Crusade" },
     { key = "CLASSIC",                displayName = "Classic" },
 }
@@ -209,3 +210,5 @@ ns.expansionToKey = {}
 for _, exp in ipairs(ns.expansionsList) do
     ns.expansionToKey[exp.displayName] = exp.key
 end
+ns.expansionToKey["Wrath of the Lich King"] = "WRATH_OF_LICH_KING"
+

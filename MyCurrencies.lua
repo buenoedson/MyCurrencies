@@ -96,13 +96,14 @@ local function GetMapHierarchyString(mapID)
     return table.concat(parts, "\n")
 end
 
+local sessionLoggedMaps = {}
+
 local function LogUnmappedMap(mapID)
     if not MyCurrenciesDB or not MyCurrenciesDB.debugLogUnmapped then return end
     if not mapID or mapID <= 0 then return end
     -- Verifica se já foi logado nesta sessão
-    if not MyCurrenciesDB._loggedMaps then MyCurrenciesDB._loggedMaps = {} end
-    if MyCurrenciesDB._loggedMaps[mapID] then return end
-    MyCurrenciesDB._loggedMaps[mapID] = true
+    if sessionLoggedMaps[mapID] then return end
+    sessionLoggedMaps[mapID] = true
 
     local info = C_Map.GetMapInfo(mapID)
     local name = info and info.name or "Unknown"
@@ -367,7 +368,7 @@ end
 local function GetExpansionFallbackByCurrencyID(id)
     if not id then return nil end
     if id >= 3300 then return "Midnight" end
-    if id >= 2400 then return "The War Within" end
+    if id >= 2800 then return "The War Within" end
     if id >= 2000 then return "Dragonflight" end
     if id >= 1800 then return "Shadowlands" end
     if id >= 1550 then return "Battle for Azeroth" end
@@ -380,7 +381,11 @@ local function GetExpansionFallbackByCurrencyID(id)
     return "Classic"
 end
 
+local isScanningCurrencies = false
+
 local function LoadGameCurrencies()
+    if isScanningCurrencies then return end
+    isScanningCurrencies = true
     trackedData = {}
     local finalData = {}
     local foundKeys = {}
@@ -563,17 +568,21 @@ local function LoadGameCurrencies()
         end
     end
 
-    -- Ordenação automática: Itens personalizados primeiro, depois ordem natural das moedas do jogo
+    -- Ordenação automática: Itens personalizados primeiro (agrupados por categoria para evitar cabeçalhos repetidos), depois ordem natural das moedas do jogo
     table.sort(finalData, function(a, b)
         local aIsCustom = a.custom and true or false
         local bIsCustom = b.custom and true or false
         if aIsCustom ~= bIsCustom then
             return aIsCustom
         end
+        if aIsCustom and bIsCustom and a.cat ~= b.cat then
+            return (a.cat or "") < (b.cat or "")
+        end
         return (a.orderIndex or 0) < (b.orderIndex or 0)
     end)
 
     trackedData = finalData
+    isScanningCurrencies = false
 end
 
 -- ============================================================================
@@ -598,17 +607,22 @@ end
 f:SetScript("OnDragStart", f.StartMoving)
 f:SetScript("OnDragStop", OnDragStopHandler)
 
+local optionsPanel
+local CreateOptionsPanel
+
+local function OpenSettingsSafely()
+    if InCombatLockdown() then return end
+    if not optionsPanel and CreateOptionsPanel then CreateOptionsPanel() end
+    if Settings and Settings.OpenToCategory and optionsPanel and optionsPanel.category then
+        Settings.OpenToCategory(optionsPanel.category:GetID())
+    elseif InterfaceOptionsFrame_OpenToCategory then
+        InterfaceOptionsFrame_OpenToCategory("My Currencies")
+    end
+end
+
 f:SetScript("OnMouseUp", function(self, button)
     if button == "RightButton" then
-        if Settings and Settings.OpenToCategory then
-            if MyCurrenciesOptions and MyCurrenciesOptions.category then
-                Settings.OpenToCategory(MyCurrenciesOptions.category:GetID())
-            else
-                Settings.OpenToCategory("My Currencies")
-            end
-        else
-            InterfaceOptionsFrame_OpenToCategory("My Currencies")
-        end
+        OpenSettingsSafely()
     end
 end)
 
@@ -634,6 +648,14 @@ local function UpdateLocalizedNames()
         if name then
             data.name = name
             if optionCheckboxes[i] then optionCheckboxes[i].text:SetText(name) end
+            if data.custom and MyCurrenciesDB and MyCurrenciesDB.customItems then
+                for _, cItem in ipairs(MyCurrenciesDB.customItems) do
+                    if cItem.id == data.id and (cItem.type or 'item') == (data.type or 'item') then
+                        cItem.name = name
+                        break
+                    end
+                end
+            end
         end
     end
 end
@@ -648,15 +670,7 @@ local function CreateIconFrame(index)
     
     icon:SetScript("OnMouseUp", function(self, button)
         if button == "RightButton" then
-            if Settings and Settings.OpenToCategory then
-                if MyCurrenciesOptions and MyCurrenciesOptions.category then
-                    Settings.OpenToCategory(MyCurrenciesOptions.category:GetID())
-                else
-                    Settings.OpenToCategory("My Currencies")
-                end
-            else
-                InterfaceOptionsFrame_OpenToCategory("My Currencies")
-            end
+            OpenSettingsSafely()
         end
     end)
     
@@ -740,7 +754,9 @@ local function UpdateDisplay()
         local iconPath = nil
         local show = false
         
-        local isEnabled = db.visibility[data.id]
+        local dataKey = (data.type or 'item') .. ":" .. data.id
+        local isEnabled = db.visibility[dataKey]
+        if isEnabled == nil then isEnabled = db.visibility[data.id] end
         if isEnabled == nil then isEnabled = true end 
         
         -- Filtro 1: Somente moedas da expansão atual do jogo (Midnight / The War Within)
@@ -832,7 +848,6 @@ local function UpdateDisplay()
     UpdateDebugDisplay()
 end
 
-local optionsPanel
 local scrollChild
 local catCheckboxes = {}
 local removeButtons = {}
@@ -867,7 +882,21 @@ local function UpdateOptionsList(filterText)
                 catHeaderCB:ClearAllPoints()
                 catHeaderCB:SetPoint("TOPLEFT", 16, yOffset)
                 catHeaderCB.text:SetText("|cFFFFD100" .. data.cat .. "|r")
-                catHeaderCB:SetChecked(true)
+
+                local allCatChecked = true
+                for _, v in ipairs(trackedData) do
+                    if v.cat == data.cat then
+                        local kKey = (v.type or 'item') .. ":" .. v.id
+                        local isVis = MyCurrenciesDB.visibility[kKey]
+                        if isVis == nil then isVis = MyCurrenciesDB.visibility[v.id] end
+                        if isVis == nil then isVis = true end
+                        if not isVis then
+                            allCatChecked = false
+                            break
+                        end
+                    end
+                end
+                catHeaderCB:SetChecked(allCatChecked)
                 catHeaderCB:Show()
                 
                 local targetCat = data.cat
@@ -875,6 +904,8 @@ local function UpdateOptionsList(filterText)
                     local state = self:GetChecked()
                     for k, v in ipairs(trackedData) do
                         if v.cat == targetCat then
+                            local kKey = (v.type or 'item') .. ":" .. v.id
+                            MyCurrenciesDB.visibility[kKey] = state
                             MyCurrenciesDB.visibility[v.id] = state
                             if optionCheckboxes[k] then optionCheckboxes[k]:SetChecked(state) end
                         end
@@ -896,10 +927,18 @@ local function UpdateOptionsList(filterText)
             cb.text:SetText(data.name)
             cb:Show()
             
-            if MyCurrenciesDB.visibility[data.id] == nil then cb:SetChecked(true)
-            else cb:SetChecked(MyCurrenciesDB.visibility[data.id]) end
+            local dataKey = (data.type or 'item') .. ":" .. data.id
+            local isChecked = MyCurrenciesDB.visibility[dataKey]
+            if isChecked == nil then isChecked = MyCurrenciesDB.visibility[data.id] end
+            if isChecked == nil then isChecked = true end
+            cb:SetChecked(isChecked)
             
-            cb:SetScript("OnClick", function(self) MyCurrenciesDB.visibility[data.id] = self:GetChecked() UpdateDisplay() end)
+            cb:SetScript("OnClick", function(self)
+                local state = self:GetChecked()
+                MyCurrenciesDB.visibility[dataKey] = state
+                MyCurrenciesDB.visibility[data.id] = state
+                UpdateDisplay()
+            end)
             
             if data.custom then
                 local delBtn = removeButtons[i]
@@ -914,7 +953,7 @@ local function UpdateOptionsList(filterText)
                 
                 delBtn:SetScript("OnClick", function()
                     for idx, customItem in ipairs(MyCurrenciesDB.customItems) do
-                        if customItem.id == data.id then
+                        if customItem.id == data.id and (customItem.type or 'item') == (data.type or 'item') then
                             table.remove(MyCurrenciesDB.customItems, idx)
                             break
                         end
@@ -946,7 +985,7 @@ local function GetCategoryList()
     return categoriesList
 end
 
-local function CreateOptionsPanel()
+function CreateOptionsPanel()
     if optionsPanel then return end
     local panel = CreateFrame("Frame", "MyCurrenciesOptions", UIParent)
     optionsPanel = panel
@@ -1299,7 +1338,8 @@ local function CreateOptionsPanel()
                 UIDropDownMenu_SetSelectedValue(typeDropdown, "item")
                 UIDropDownMenu_SetText(typeDropdown, L:S("TYPE_ITEM") or "Item")
                 
-                local expacID = select(15, C_Item.GetItemInfo(self.itemID))
+                local itemInfo = { C_Item.GetItemInfo(self.itemID) }
+                local expacID = itemInfo[15]
                 if expacID then
                     local expacNames = {
                         [0] = "Classic",
@@ -1332,7 +1372,8 @@ local function CreateOptionsPanel()
         
         text = string.lower(text)
         local results = {}
-        for bag = 0, 4 do
+        local maxBag = (NUM_BAG_SLOTS and (NUM_BAG_SLOTS + (NUM_REAGENTBAG_SLOTS or 1))) or 5
+        for bag = 0, maxBag do
             for slot = 1, C_Container.GetContainerNumSlots(bag) do
                 local itemInfo = C_Container.GetContainerItemInfo(bag, slot)
                 if itemInfo and itemInfo.itemID then
@@ -1467,8 +1508,13 @@ local function CreateOptionsPanel()
     cbAll:SetScript("OnClick", function(self)
         local state = self:GetChecked()
         for i, data in ipairs(trackedData) do
+            local dataKey = (data.type or 'item') .. ":" .. data.id
+            MyCurrenciesDB.visibility[dataKey] = state
             MyCurrenciesDB.visibility[data.id] = state
             if optionCheckboxes[i] then optionCheckboxes[i]:SetChecked(state) end
+        end
+        for _, cb in ipairs(catCheckboxes) do
+            cb:SetChecked(state)
         end
         UpdateDisplay()
     end)
@@ -1492,7 +1538,7 @@ local isInitialized = false
 f:RegisterEvent("ADDON_LOADED")
 f:RegisterEvent("PLAYER_ENTERING_WORLD")
 f:RegisterEvent("CURRENCY_DISPLAY_UPDATE")
-f:RegisterEvent("BAG_UPDATE")
+f:RegisterEvent("BAG_UPDATE_DELAYED")
 f:RegisterEvent("PLAYER_UPDATE_RESTING")
 f:RegisterEvent("PLAYER_REGEN_DISABLED")
 f:RegisterEvent("PLAYER_REGEN_ENABLED")
@@ -1504,6 +1550,7 @@ f:RegisterEvent("ZONE_CHANGED_INDOORS")
 f:SetScript("OnEvent", function(self, event, arg1)
     if event == "ADDON_LOADED" and arg1 == addonName then
         if not MyCurrenciesDB then MyCurrenciesDB = {} end
+        if MyCurrenciesDB._loggedMaps then MyCurrenciesDB._loggedMaps = nil end
         for k, v in pairs(defaults) do
             if MyCurrenciesDB[k] == nil then MyCurrenciesDB[k] = v end
         end
@@ -1570,13 +1617,10 @@ SlashCmdList["MYCURRENCIES"] = function(msg)
         return
     end
 
-    if Settings and Settings.OpenToCategory then
-        if MyCurrenciesOptions and MyCurrenciesOptions.category then
-            Settings.OpenToCategory(MyCurrenciesOptions.category:GetID())
-        else
-            Settings.OpenToCategory("My Currencies")
-        end
-    else
-        InterfaceOptionsFrame_OpenToCategory("My Currencies")
+    if InCombatLockdown() then
+        print("|cFFFFD100My Currencies:|r " .. (L:S("CMD_BLOCKED_COMBAT") or "Interface blocked in combat."))
+        return
     end
+
+    OpenSettingsSafely()
 end

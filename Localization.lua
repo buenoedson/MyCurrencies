@@ -9,7 +9,6 @@ _G.MyCurrenciesL = L
 -- Mapa de idiomas do WoW
 local wowLocales = {
     ["enUS"] = "English",
-    ["esMX"] = "Español",
     ["esES"] = "Español",
     ["frFR"] = "Français",
     ["deDE"] = "Deutsch",
@@ -26,7 +25,7 @@ local function GetDefaultLanguage()
     local locale = GetLocale()
     if locale == "ptBR" or locale:find("pt") then return "ptBR" end
     if locale:find("en") then return "enUS" end
-    if locale == "esMX" or locale == "esES" then return "esES" end
+    if locale == "esMX" or locale == "esES" or locale:find("es") then return "esES" end
     if locale:find("fr") then return "frFR" end
     if locale:find("de") then return "deDE" end
     if locale:find("it") then return "itIT" end
@@ -79,6 +78,7 @@ local translations = {
         WARLORDS_OF_DRAENOR = "Warlords of Draenor",
         MISTS_OF_PANDARIA = "Mists of Pandaria",
         WRATH_OF_LICH_KING = "Wrath of the Lich King",
+        WRATH_OF_THE_LICH_KING = "Wrath of the Lich King",
         BURNING_CRUSADE = "Burning Crusade",
         CATACLYSM = "Cataclysm",
         CLASSIC = "Classic",
@@ -102,8 +102,11 @@ local translations = {
         ERROR_CATEGORY_REQUIRED = "Erro: Categoria obrigatória",
         ERROR_ID_EXISTS = "Erro: Este ID já existe",
         ADDED = "Adicionado:",
-                CLEARED_ALL = "Todos os itens customizados foram limpos",
+        CLEARED_ALL = "Todos os itens customizados foram limpos",
         RELOAD_REQUIRED = "Recarregue a interface (/reload) para aplicar o idioma.",
+        REMOVED = "Removido:",
+        SEARCH = "Buscar...",
+        CMD_BLOCKED_COMBAT = "Interface bloqueada em combate.",
         
         -- Debug / Developer
         DEBUG_TITLE = "Desenvolvedor / Debug",
@@ -147,6 +150,7 @@ local translations = {
         WARLORDS_OF_DRAENOR = "Warlords of Draenor",
         MISTS_OF_PANDARIA = "Mists of Pandaria",
         WRATH_OF_LICH_KING = "Wrath of the Lich King",
+        WRATH_OF_THE_LICH_KING = "Wrath of the Lich King",
         BURNING_CRUSADE = "Burning Crusade",
         CATACLYSM = "Cataclysm",
         CLASSIC = "Classic",
@@ -167,8 +171,11 @@ local translations = {
         ERROR_CATEGORY_REQUIRED = "Error: Category required",
         ERROR_ID_EXISTS = "Error: This ID already exists",
         ADDED = "Added:",
-                CLEARED_ALL = "Cleared all custom items",
+        CLEARED_ALL = "Cleared all custom items",
         RELOAD_REQUIRED = "Reload UI (/reload) to apply language changes.",
+        REMOVED = "Removed:",
+        SEARCH = "Search...",
+        CMD_BLOCKED_COMBAT = "Interface blocked in combat.",
         
         -- Debug / Developer
         DEBUG_TITLE = "Developer / Debug",
@@ -198,6 +205,8 @@ local translations = {
         LANGUAGE = "Idioma",
         SHOW_ONLY_RESTING = "Mostrar solo en Áreas de Descanso",
         SHOW_ONLY_EXPANSION = "Mostrar solo monedas de la expansión actual",
+        SHOW_ONLY_MAP_EXPANSION = "Mostrar solo monedas de la expansión del mapa actual",
+        HIDE_IN_COMBAT = "Ocultar durante el combate",
         SELECT_ALL = "[ SELECCIONAR / DESELECCIONAR TODO ]",
         CATEGORIES_TITLE = "Categorías de Monedas",
         MIDNIGHT = "Midnight",
@@ -209,7 +218,10 @@ local translations = {
         WARLORDS_OF_DRAENOR = "Warlords of Draenor",
         MISTS_OF_PANDARIA = "Mists of Pandaria",
         WRATH_OF_LICH_KING = "Wrath of the Lich King",
+        WRATH_OF_THE_LICH_KING = "Wrath of the Lich King",
         BURNING_CRUSADE = "Burning Crusade",
+        CATACLYSM = "Cataclysm",
+        CLASSIC = "Classic",
         HIDDEN_CURRENCY = "Moneda Oculta",
         ITEMS = "Objetos",
         ANCIENT_ITEMS = "Objetos - Antiguos",
@@ -229,6 +241,9 @@ local translations = {
         ADDED = "Añadido:",
                 CLEARED_ALL = "Se borraron todos los objetos personalizados",
         RELOAD_REQUIRED = "Recarga la interfaz (/reload) para aplicar el idioma.",
+        REMOVED = "Eliminado:",
+        SEARCH = "Buscar...",
+        CMD_BLOCKED_COMBAT = "Interfaz bloqueada en combate.",
         
         -- Debug / Developer
         DEBUG_TITLE = "Desarrollador / Depuración",
@@ -237,6 +252,13 @@ local translations = {
         DEBUG_SHOW_MAP = "Mostrar Info del Mapa Actual",
         DEBUG_SHOW_HIERARCHY = "Mostrar Jerarquía del Mapa",
         DEBUG_HIERARCHY_TITLE = "Jerarquía de Mapas:",
+        DEBUG_MAP_ID = "ID del Mapa:",
+        DEBUG_EXPANSION = "Expansión:",
+        DEBUG_UNMAPPED = "¡NO MAPEADO!",
+        DEBUG_NO_MAP = "¡SIN MAPA!",
+        DEBUG_NO_MAP_DATA = "Sin datos de mapa",
+        DEBUG_UNKNOWN = "Desconocido",
+        DEBUG_NONE = "NINGUNO",
     },
     
     -- FRANÇAIS (FR-FR)
@@ -251,6 +273,8 @@ local translations = {
         LANGUAGE = "Langue",
         SHOW_ONLY_RESTING = "Afficher uniquement dans les zones de repos",
         SHOW_ONLY_EXPANSION = "Afficher uniquement les devises de l'extension actuelle",
+        SHOW_ONLY_MAP_EXPANSION = "Afficher uniquement les devises de l'extension de la carte actuelle",
+        HIDE_IN_COMBAT = "Masquer en combat",
         SELECT_ALL = "[ SÉLECTIONNER / DÉSÉLECTIONNER TOUT ]",
         CATEGORIES_TITLE = "Catégories de Devises",
         MIDNIGHT = "Midnight",
@@ -262,11 +286,17 @@ local translations = {
         WARLORDS_OF_DRAENOR = "Warlords of Draenor",
         MISTS_OF_PANDARIA = "Mists of Pandaria",
         WRATH_OF_LICH_KING = "Wrath of the Lich King",
+        WRATH_OF_THE_LICH_KING = "Wrath of the Lich King",
         BURNING_CRUSADE = "Burning Crusade",
+        CATACLYSM = "Cataclysm",
+        CLASSIC = "Classic",
         HIDDEN_CURRENCY = "Devise Cachée",
         ITEMS = "Objets",
-                ANCIENT_ITEMS = "Objets - Anciens",
+        ANCIENT_ITEMS = "Objets - Anciens",
         RELOAD_REQUIRED = "Rechargez l'interface (/reload) pour appliquer la langue.",
+        REMOVED = "Supprimé :",
+        SEARCH = "Rechercher...",
+        CMD_BLOCKED_COMBAT = "Interface bloquée en combat.",
         
         -- Debug / Developer
         DEBUG_TITLE = "Développeur / Débogage",
@@ -275,6 +305,13 @@ local translations = {
         DEBUG_SHOW_MAP = "Afficher les Infos de la Carte Actuelle",
         DEBUG_SHOW_HIERARCHY = "Afficher la Hiérarchie de la Carte",
         DEBUG_HIERARCHY_TITLE = "Hiérarchie de la Carte :",
+        DEBUG_MAP_ID = "ID de la Carte :",
+        DEBUG_EXPANSION = "Extension :",
+        DEBUG_UNMAPPED = "NON MAPPÉ !",
+        DEBUG_NO_MAP = "AUCUNE CARTE !",
+        DEBUG_NO_MAP_DATA = "Aucune donnée de carte",
+        DEBUG_UNKNOWN = "Inconnu",
+        DEBUG_NONE = "AUCUN",
     },
     
     -- DEUTSCH (DE-DE)
@@ -289,6 +326,8 @@ local translations = {
         LANGUAGE = "Sprache",
         SHOW_ONLY_RESTING = "Nur in Ruhegebieten anzeigen",
         SHOW_ONLY_EXPANSION = "Nur Währungen der aktuellen Erweiterung anzeigen",
+        SHOW_ONLY_MAP_EXPANSION = "Nur Währungen der aktuellen Kartenerweiterung anzeigen",
+        HIDE_IN_COMBAT = "Im Kampf ausblenden",
         SELECT_ALL = "[ ALLE AUSWÄHLEN / ALLE ABWÄHLEN ]",
         CATEGORIES_TITLE = "Währungskategorien",
         MIDNIGHT = "Midnight",
@@ -300,11 +339,17 @@ local translations = {
         WARLORDS_OF_DRAENOR = "Warlords of Draenor",
         MISTS_OF_PANDARIA = "Mists of Pandaria",
         WRATH_OF_LICH_KING = "Wrath of the Lich King",
+        WRATH_OF_THE_LICH_KING = "Wrath of the Lich King",
         BURNING_CRUSADE = "Burning Crusade",
+        CATACLYSM = "Cataclysm",
+        CLASSIC = "Classic",
         HIDDEN_CURRENCY = "Versteckte Währung",
         ITEMS = "Gegenstände",
-                ANCIENT_ITEMS = "Gegenstände - Antik",
+        ANCIENT_ITEMS = "Gegenstände - Antik",
         RELOAD_REQUIRED = "Benutzeroberfläche neu laden (/reload), um die Sprache anzuwenden.",
+        REMOVED = "Entfernt:",
+        SEARCH = "Suchen...",
+        CMD_BLOCKED_COMBAT = "Benutzeroberfläche im Kampf gesperrt.",
         
         -- Debug / Developer
         DEBUG_TITLE = "Entwickler / Debug",
@@ -313,6 +358,13 @@ local translations = {
         DEBUG_SHOW_MAP = "Aktuelle Karteninfo anzeigen",
         DEBUG_SHOW_HIERARCHY = "Kartenhierarchie anzeigen",
         DEBUG_HIERARCHY_TITLE = "Kartenhierarchie:",
+        DEBUG_MAP_ID = "Karten-ID:",
+        DEBUG_EXPANSION = "Erweiterung:",
+        DEBUG_UNMAPPED = "NICHT ZUGEORDNET!",
+        DEBUG_NO_MAP = "KEINE KARTE!",
+        DEBUG_NO_MAP_DATA = "Keine Kartendaten",
+        DEBUG_UNKNOWN = "Unbekannt",
+        DEBUG_NONE = "KEINE",
     },
     
     -- ITALIANO (IT-IT)
@@ -327,6 +379,8 @@ local translations = {
         LANGUAGE = "Lingua",
         SHOW_ONLY_RESTING = "Mostra solo in aree di riposo",
         SHOW_ONLY_EXPANSION = "Mostra solo valute dell'espansione attuale",
+        SHOW_ONLY_MAP_EXPANSION = "Mostra solo valute dell'espansione della mappa corrente",
+        HIDE_IN_COMBAT = "Nascondi in combattimento",
         SELECT_ALL = "[ SELEZIONA / DESELEZIONA TUTTO ]",
         CATEGORIES_TITLE = "Categorie Valute",
         MIDNIGHT = "Midnight",
@@ -338,11 +392,17 @@ local translations = {
         WARLORDS_OF_DRAENOR = "Warlords of Draenor",
         MISTS_OF_PANDARIA = "Mists of Pandaria",
         WRATH_OF_LICH_KING = "Wrath of the Lich King",
+        WRATH_OF_THE_LICH_KING = "Wrath of the Lich King",
         BURNING_CRUSADE = "Burning Crusade",
+        CATACLYSM = "Cataclysm",
+        CLASSIC = "Classic",
         HIDDEN_CURRENCY = "Valuta Nascosta",
         ITEMS = "Oggetti",
-                ANCIENT_ITEMS = "Oggetti - Antichi",
+        ANCIENT_ITEMS = "Oggetti - Antichi",
         RELOAD_REQUIRED = "Ricarica l'interfaccia (/reload) per applicare la lingua.",
+        REMOVED = "Rimosso:",
+        SEARCH = "Cerca...",
+        CMD_BLOCKED_COMBAT = "Interfaccia bloccata in combattimento.",
         
         -- Debug / Developer
         DEBUG_TITLE = "Sviluppatore / Debug",
@@ -351,6 +411,13 @@ local translations = {
         DEBUG_SHOW_MAP = "Mostra Info Mappa Corrente",
         DEBUG_SHOW_HIERARCHY = "Mostra Gerarchia Mappa",
         DEBUG_HIERARCHY_TITLE = "Gerarchia Mappa:",
+        DEBUG_MAP_ID = "ID Mappa:",
+        DEBUG_EXPANSION = "Espansione:",
+        DEBUG_UNMAPPED = "NON MAPPATO!",
+        DEBUG_NO_MAP = "NESSUNA MAPPA!",
+        DEBUG_NO_MAP_DATA = "Nessun dato mappa",
+        DEBUG_UNKNOWN = "Sconosciuto",
+        DEBUG_NONE = "NESSUNO",
     },
     
     -- РУССКИЙ (RU-RU)
@@ -365,6 +432,8 @@ local translations = {
         LANGUAGE = "Язык",
         SHOW_ONLY_RESTING = "Показывать только в зонах отдыха",
         SHOW_ONLY_EXPANSION = "Показывать только валюты текущего дополнения",
+        SHOW_ONLY_MAP_EXPANSION = "Показывать только валюты дополнения текущей карты",
+        HIDE_IN_COMBAT = "Скрывать в бою",
         SELECT_ALL = "[ ВЫБРАТЬ / СНЯТЬ ВСЕ ОТМЕТКИ ]",
         CATEGORIES_TITLE = "Категории Валют",
         MIDNIGHT = "Midnight",
@@ -376,11 +445,17 @@ local translations = {
         WARLORDS_OF_DRAENOR = "Warlords of Draenor",
         MISTS_OF_PANDARIA = "Mists of Pandaria",
         WRATH_OF_LICH_KING = "Wrath of the Lich King",
+        WRATH_OF_THE_LICH_KING = "Wrath of the Lich King",
         BURNING_CRUSADE = "Burning Crusade",
+        CATACLYSM = "Cataclysm",
+        CLASSIC = "Classic",
         HIDDEN_CURRENCY = "Скрытая Валюта",
         ITEMS = "Предметы",
-                ANCIENT_ITEMS = "Предметы - Древние",
+        ANCIENT_ITEMS = "Предметы - Древние",
         RELOAD_REQUIRED = "Перезагрузите интерфейс (/reload) для применения языка.",
+        REMOVED = "Удалено:",
+        SEARCH = "Поиск...",
+        CMD_BLOCKED_COMBAT = "Интерфейс заблокирован в бою.",
         
         -- Debug / Developer
         DEBUG_TITLE = "Разработчик / Отладка",
@@ -389,6 +464,13 @@ local translations = {
         DEBUG_SHOW_MAP = "Показать информацию о текущей карте",
         DEBUG_SHOW_HIERARCHY = "Показать иерархию карты",
         DEBUG_HIERARCHY_TITLE = "Иерархия карты:",
+        DEBUG_MAP_ID = "ID Карты:",
+        DEBUG_EXPANSION = "Дополнение:",
+        DEBUG_UNMAPPED = "НЕ СОПОСТАВЛЕНО!",
+        DEBUG_NO_MAP = "НЕТ КАРТЫ!",
+        DEBUG_NO_MAP_DATA = "Нет данных карты",
+        DEBUG_UNKNOWN = "Неизвестно",
+        DEBUG_NONE = "НЕТ",
     },
     
     -- 简体中文 (ZH-CN)
@@ -403,6 +485,8 @@ local translations = {
         LANGUAGE = "语言",
         SHOW_ONLY_RESTING = "仅在休息区域显示",
         SHOW_ONLY_EXPANSION = "仅显示当前扩展的货币",
+        SHOW_ONLY_MAP_EXPANSION = "仅显示当前地图扩展包的货币",
+        HIDE_IN_COMBAT = "战斗中隐藏",
         SELECT_ALL = "[ 全选 / 全不选 ]",
         CATEGORIES_TITLE = "货币分类",
         MIDNIGHT = "Midnight",
@@ -414,11 +498,17 @@ local translations = {
         WARLORDS_OF_DRAENOR = "Warlords of Draenor",
         MISTS_OF_PANDARIA = "Mists of Pandaria",
         WRATH_OF_LICH_KING = "Wrath of the Lich King",
+        WRATH_OF_THE_LICH_KING = "Wrath of the Lich King",
         BURNING_CRUSADE = "Burning Crusade",
+        CATACLYSM = "Cataclysm",
+        CLASSIC = "Classic",
         HIDDEN_CURRENCY = "隐藏货币",
         ITEMS = "物品",
-                ANCIENT_ITEMS = "物品 - 古代",
+        ANCIENT_ITEMS = "物品 - 古代",
         RELOAD_REQUIRED = "重载界面 (/reload) 以应用语言更改。",
+        REMOVED = "已移除:",
+        SEARCH = "搜索...",
+        CMD_BLOCKED_COMBAT = "战斗中界面锁定。",
         
         -- Debug / Developer
         DEBUG_TITLE = "开发人员 / 调试",
@@ -427,6 +517,13 @@ local translations = {
         DEBUG_SHOW_MAP = "显示当前地图信息",
         DEBUG_SHOW_HIERARCHY = "显示地图层级",
         DEBUG_HIERARCHY_TITLE = "地图层级:",
+        DEBUG_MAP_ID = "地图ID:",
+        DEBUG_EXPANSION = "扩展包:",
+        DEBUG_UNMAPPED = "未映射!",
+        DEBUG_NO_MAP = "无地图!",
+        DEBUG_NO_MAP_DATA = "无地图数据",
+        DEBUG_UNKNOWN = "未知",
+        DEBUG_NONE = "无",
     },
     
     -- 繁體中文 (ZH-TW)
@@ -441,6 +538,8 @@ local translations = {
         LANGUAGE = "語言",
         SHOW_ONLY_RESTING = "僅在休息區域顯示",
         SHOW_ONLY_EXPANSION = "僅顯示目前擴充包的貨幣",
+        SHOW_ONLY_MAP_EXPANSION = "僅顯示目前地圖擴充包的貨幣",
+        HIDE_IN_COMBAT = "戰鬥中隱藏",
         SELECT_ALL = "[ 全選 / 全不選 ]",
         CATEGORIES_TITLE = "貨幣分類",
         MIDNIGHT = "Midnight",
@@ -452,11 +551,17 @@ local translations = {
         WARLORDS_OF_DRAENOR = "Warlords of Draenor",
         MISTS_OF_PANDARIA = "Mists of Pandaria",
         WRATH_OF_LICH_KING = "Wrath of the Lich King",
+        WRATH_OF_THE_LICH_KING = "Wrath of the Lich King",
         BURNING_CRUSADE = "Burning Crusade",
+        CATACLYSM = "Cataclysm",
+        CLASSIC = "Classic",
         HIDDEN_CURRENCY = "隱藏貨幣",
         ITEMS = "物品",
-                ANCIENT_ITEMS = "物品 - 古代",
+        ANCIENT_ITEMS = "物品 - 古代",
         RELOAD_REQUIRED = "重載介面 (/reload) 以套用語言變更。",
+        REMOVED = "已移除:",
+        SEARCH = "搜尋...",
+        CMD_BLOCKED_COMBAT = "戰鬥中介面鎖定。",
         
         -- Debug / Developer
         DEBUG_TITLE = "開發人員 / 除錯",
@@ -465,6 +570,13 @@ local translations = {
         DEBUG_SHOW_MAP = "顯示目前地圖資訊",
         DEBUG_SHOW_HIERARCHY = "顯示地圖層級",
         DEBUG_HIERARCHY_TITLE = "地圖層級:",
+        DEBUG_MAP_ID = "地圖ID:",
+        DEBUG_EXPANSION = "擴充包:",
+        DEBUG_UNMAPPED = "未映射!",
+        DEBUG_NO_MAP = "無地圖!",
+        DEBUG_NO_MAP_DATA = "無地圖資料",
+        DEBUG_UNKNOWN = "未知",
+        DEBUG_NONE = "無",
     },
     
     -- 한국어 (KO-KR)
@@ -479,6 +591,8 @@ local translations = {
         LANGUAGE = "언어",
         SHOW_ONLY_RESTING = "휴식 구역에서만 표시",
         SHOW_ONLY_EXPANSION = "현재 확장팩의 화폐만 표시",
+        SHOW_ONLY_MAP_EXPANSION = "현재 지도 확장팩의 화폐만 표시",
+        HIDE_IN_COMBAT = "전투 중 숨기기",
         SELECT_ALL = "[ 모두 선택 / 모두 선택 해제 ]",
         CATEGORIES_TITLE = "화폐 카테고리",
         MIDNIGHT = "Midnight",
@@ -490,11 +604,17 @@ local translations = {
         WARLORDS_OF_DRAENOR = "Warlords of Draenor",
         MISTS_OF_PANDARIA = "Mists of Pandaria",
         WRATH_OF_LICH_KING = "Wrath of the Lich King",
+        WRATH_OF_THE_LICH_KING = "Wrath of the Lich King",
         BURNING_CRUSADE = "Burning Crusade",
+        CATACLYSM = "Cataclysm",
+        CLASSIC = "Classic",
         HIDDEN_CURRENCY = "숨겨진 화폐",
         ITEMS = "아이템",
-                ANCIENT_ITEMS = "아이템 - 고대",
+        ANCIENT_ITEMS = "아이템 - 고대",
         RELOAD_REQUIRED = "언어 변경을 적용하려면 UI를 다시 로드(/reload)하세요.",
+        REMOVED = "제거됨:",
+        SEARCH = "검색...",
+        CMD_BLOCKED_COMBAT = "전투 중에는 인터페이스가 잠깁니다.",
         
         -- Debug / Developer
         DEBUG_TITLE = "개발자 / 디버그",
@@ -503,13 +623,24 @@ local translations = {
         DEBUG_SHOW_MAP = "현재 지도 정보 표시",
         DEBUG_SHOW_HIERARCHY = "지도 계층 표시",
         DEBUG_HIERARCHY_TITLE = "지도 계층:",
+        DEBUG_MAP_ID = "지도 ID:",
+        DEBUG_EXPANSION = "확장팩:",
+        DEBUG_UNMAPPED = "매핑되지 않음!",
+        DEBUG_NO_MAP = "지도 없음!",
+        DEBUG_NO_MAP_DATA = "지도 데이터 없음",
+        DEBUG_UNKNOWN = "알 수 없음",
+        DEBUG_NONE = "없음",
     },
 }
+
+translations.esMX = translations.esES
 
 -- Função para obter o idioma salvo ou detectado
 local function GetCurrentLanguage()
     if MyCurrenciesDB and MyCurrenciesDB.language then
-        return MyCurrenciesDB.language
+        local lang = MyCurrenciesDB.language
+        if lang == "esMX" then return "esES" end
+        return lang
     end
     return GetDefaultLanguage()
 end
