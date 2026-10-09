@@ -221,6 +221,18 @@ local function GetCurrentMapExpansion()
     return mapID and ns.GetExpansionByMapID(mapID)
 end
 
+-- Determina se a expansão do mapa atual é compatível com a expansão da moeda.
+-- Mapas do Classic no Retail (Kalimdor / Eastern Kingdoms) foram reformulados no Cataclysm
+-- e compartilham moedas e áreas, portanto devem exibir tanto Classic quanto Cataclysm.
+local function MapExpansionMatches(mapExp, targetExp)
+    if not mapExp or not targetExp then return false end
+    if mapExp == targetExp then return true end
+    if (mapExp == "Classic" and targetExp == "Cataclysm") or (mapExp == "Cataclysm" and targetExp == "Classic") then
+        return true
+    end
+    return false
+end
+
 local trackedData = {}
 
 -- Mapeamento de cabeçalhos do C_CurrencyInfo → expansão canônica.
@@ -235,6 +247,9 @@ local HEADER_TO_EXPANSION = {
     ["zul'aman"]            = "Midnight",
     ["atal'aman"]           = "Midnight",
     ["voidstorm"]           = "Midnight",
+    ["the coiled isle"]     = "Midnight",
+    ["the den"]             = "Midnight",
+    ["arcantina"]           = "Midnight",
 
     -- The War Within (11.x)
     ["the war within"]      = "The War Within",
@@ -316,6 +331,7 @@ local HEADER_TO_EXPANSION = {
 
     -- Cataclysm (4.x)
     ["cataclysm"]           = "Cataclysm",
+    ["cataclismo"]          = "Cataclysm",
 
     -- Wrath of the Lich King (3.x)
     ["wrath of the lich king"] = "Wrath of the Lich King",
@@ -323,11 +339,18 @@ local HEADER_TO_EXPANSION = {
     ["icecrown"]            = "Wrath of the Lich King",
     ["storm peaks"]         = "Wrath of the Lich King",
     ["zul'drak"]            = "Wrath of the Lich King",
+    ["ira do lich rei"]     = "Wrath of the Lich King",
 
     -- Burning Crusade (2.x)
     ["burning crusade"]     = "Burning Crusade",
     ["outland"]             = "Burning Crusade",
     ["hellfire peninsula"]  = "Burning Crusade",
+    ["cruzada ardente"]     = "Burning Crusade",
+
+    -- Classic (1.x)
+    ["classic"]             = "Classic",
+    ["clássico"]            = "Classic",
+    ["classico"]            = "Classic",
 }
 
 -- Retorna o nome canônico de expansão a partir de um cabeçalho do C_CurrencyInfo.
@@ -346,21 +369,16 @@ local function DetectExpansionFromString(str)
     return nil
 end
 
--- Cabeçalhos globais onde não devemos inferir expansão (exibir em qualquer lugar se autoFilterRegion estiver ativo)
+-- Cabeçalhos globais onde não devemos inferir expansão (exibir em qualquer lugar se autoFilterRegion ou showOnlyMapExpansion estiverem ativos)
+-- Inclui exclusivamente categorias neutras/globais como Dungeon and Raid, Miscellaneous, PvP e Warband
 local function IsNeutralHeader(headerName)
     if not headerName then return false end
     local h = string.lower(headerName)
-    if string.find(h, "player vs%. player") or string.find(h, "jogador x jogador") or string.find(h, "pvp") then return true end
-    if string.find(h, "miscellaneous") or string.find(h, "diversos") then return true end
-    if string.find(h, "warband") or string.find(h, "bando de guerra") then return true end
+    if string.find(h, "player vs%. player") or string.find(h, "jogador x jogador") or string.find(h, "pvp") or string.find(h, "jxj") then return true end
+    if string.find(h, "miscellaneous") or string.find(h, "diversos") or string.find(h, "miscelánea") or string.find(h, "miscelanea") or string.find(h, "sonstiges") or string.find(h, "varie") or string.find(h, "разное") or string.find(h, "杂项") or string.find(h, "雜項") or string.find(h, "기타") then return true end
+    if string.find(h, "warband") or string.find(h, "bando de guerra") or string.find(h, "bataillon") or string.find(h, "kriegsmeute") or string.find(h, "brigata") or string.find(h, "отряд") or string.find(h, "战团") or string.find(h, "戰隊") or string.find(h, "전투부대") then return true end
     if string.find(h, "trading post") or string.find(h, "posto comercial") then return true end
-    if string.find(h, "dungeon") or string.find(h, "masmorra") or string.find(h, "raid") then return true end
-    if string.find(h, "antigos") or string.find(h, "ancient") or string.find(h, "legacy") or string.find(h, "legado") then return true end
-    if string.find(h, "delve") or string.find(h, "imers") then return true end
-    if string.find(h, "crest") or string.find(h, "bras") then return true end
-    if string.find(h, "feature") or string.find(h, "recurso") then return true end
-    if string.find(h, "profession") or string.find(h, "profiss") or string.find(h, "profes") then return true end
-    if string.find(h, "zone") or string.find(h, "zona") then return true end
+    if string.find(h, "dungeon") or string.find(h, "masmorra") or string.find(h, "raid") or string.find(h, "raide") or string.find(h, "mazmorra") or string.find(h, "donjon") or string.find(h, "schlachtzug") or string.find(h, "incursione") or string.find(h, "подземел") or string.find(h, "地下城") or string.find(h, "团队副本") or string.find(h, "團隊副本") or string.find(h, "던전") or string.find(h, "레이드") then return true end
     return false
 end
 
@@ -487,15 +505,26 @@ local function LoadGameCurrencies()
         local info = C_CurrencyInfo.GetCurrencyListInfo(i)
         if info then
             if info.isHeader then
-                local lowerName = string.lower(info.name or "")
-                if string.find(lowerName, "season") or string.find(lowerName, "temporada") or string.find(lowerName, "série") or string.find(lowerName, "serie") then
-                    currentCat = currentMainCat .. " - " .. (info.name or "")
-                    -- subcabeçalho de season herda a expansão do pai
+                local headerName = info.name or "Moedas"
+                local detectedExp = DetectExpansionFromString(headerName)
+                
+                if detectedExp then
+                    -- Cabeçalho de expansão principal (ex: "Midnight", "The War Within", "Cataclysm", etc.)
+                    currentMainCat = headerName
+                    currentCat = headerName
+                    currentExpansion = detectedExp
+                elseif IsNeutralHeader(headerName) then
+                    -- Cabeçalho global neutro (ex: "Dungeon and Raid", "Miscellaneous", "Player vs. Player", "Warband")
+                    currentMainCat = headerName
+                    currentCat = headerName
+                    currentExpansion = nil
                 else
-                    currentMainCat = info.name or "Moedas"
-                    currentCat = info.name or "Moedas"
-                    -- Tenta detectar expansão pelo nome do cabeçalho principal
-                    currentExpansion = DetectExpansionFromString(info.name)
+                    -- Subcabeçalho dentro de uma expansão ou categoria (ex: "Crests", "Delves", "Season 1", "Dragon Isles Supplies")
+                    currentCat = currentMainCat .. " - " .. headerName
+                    -- Preserva a expansão herdada do cabeçalho pai; se o pai não tinha, tenta inferir dele
+                    if not currentExpansion then
+                        currentExpansion = DetectExpansionFromString(currentMainCat)
+                    end
                 end
             else
                 local currencyID = info.currencyID
@@ -767,8 +796,10 @@ local function UpdateDisplay()
         end
 
         -- Filtro 2: Somente moedas da expansão do mapa onde o personagem se encontra
+        -- Se data.expansion existir, deve ser compatível com o mapa atual (Classic inclui Cataclysm)
+        -- Moedas neutras/globais (Dungeon and Raid, Miscellaneous, etc. com data.expansion == nil) permanecem visíveis em qualquer mapa se marcadas
         if db.showOnlyMapExpansion and data.expansion then
-            if not currentMapExp or data.expansion ~= currentMapExp then
+            if not currentMapExp or not MapExpansionMatches(currentMapExp, data.expansion) then
                 isEnabled = false
             end
         end

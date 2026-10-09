@@ -142,3 +142,23 @@
 - [x] Resolver colisões de ID entre moedas e itens na visibilidade.
 - [x] Normalizar e sincronizar chaves de localização e expansões em todos os idiomas suportados.
 
+### 08/10/2026: Correção de Filtro de Expansão de Mapa, Herança de Subcabeçalhos e Mapeamento Arcantina
+- **Ações:**
+  - Adicionado o mapa `2541 - Arcantina` como expansão `Midnight` em `ns.mapToExpansions` ([MapData.lua](file:///c:/Program%20Files%20%28x86%29/World%20of%20Warcraft/_retail_/Interface/AddOns/MyCurrencies/MapData.lua)) e em `HEADER_TO_EXPANSION` ([MyCurrencies.lua](file:///c:/Program%20Files%20%28x86%29/World%20of%20Warcraft/_retail_/Interface/AddOns/MyCurrencies/MyCurrencies.lua)).
+  - Implementada a função `MapExpansionMatches(mapExp, targetExp)` para conectar mapas do Classic aos conteúdos e moedas do Cataclysm (devido ao reaproveitamento/remodelagem pós-Cataclysm de Kalimdor e Reinos do Leste no Retail).
+  - Restringida a função `IsNeutralHeader` para apenas categorias estritamente neutras/globais (`Dungeon and Raid`, `Miscellaneous`, `Player vs. Player` e `Warband`), removendo termos como `crest` e `delve`.
+  - Refatorado o processamento de cabeçalhos em `LoadGameCurrencies`: subcabeçalhos (como Crests, Delves, Seasons) agora herdam a expansão do cabeçalho pai da expansão, garantindo que suas moedas recebam `data.expansion` correto (ex: `Midnight` ou `The War Within`).
+  - Ajustado o filtro `showOnlyMapExpansion` em `UpdateDisplay()`: moedas com expansão associada só são exibidas se compatíveis com o mapa atual via `MapExpansionMatches`; moedas globais neutras (Dungeon and Raid, Miscellaneous, etc., onde `expansion == nil`) permanecem visíveis em qualquer mapa se marcadas pelo usuário.
+- **Decisões:**
+  - Permitir que mapas de Classic exibam moedas de Cataclysm e vice-versa de forma bidirecional no filtro dinâmico de mapa.
+  - Manter moedas de masmorra, raide e diversos com visibilidade global independente do mapa onde o jogador se encontra.
+- **Bugs corrigidos:**
+  - Moedas da expansão atual (Crests, Delves) aparecendo mesmo com filtro de mapa ativo no Classic → subcabeçalhos sobrescreviam `currentMainCat` e `IsNeutralHeader` incluía `crest`/`delve`, zerando `data.expansion` para `nil` e contornando a checagem → herança de expansão corrigida e termos removidos de `IsNeutralHeader`.
+  - Arcantina (ID 2541) identificada como Classic → mapa não estava cadastrado e hierarquia herdava de Reinos do Leste (13) → adicionado ID 2541 à lista `Midnight` em `ns.mapToExpansions`.
+
+### Tarefas Pendentes
+- [x] Corrigir filtro de expansão de mapa para ocultar moedas da expansão atual em mapas não compatíveis.
+- [x] Exibir moedas de Cataclysm em mapas do Classic.
+- [x] Permitir que Dungeon and Raid e Miscellaneous apareçam em qualquer mapa.
+- [x] Mapear ID 2541 (Arcantina) como Midnight.
+

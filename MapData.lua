@@ -20,6 +20,7 @@ ns.mapToExpansions = {
     [2536] = "Midnight", -- Atal'Aman
     [2405] = "Midnight", -- Voidstorm
     [2512] = "Midnight", -- The Coiled Isle
+    [2541] = "Midnight", -- Arcantina
 
     -- === THE WAR WITHIN ===
     [2274] = "The War Within", -- Khaz Algar

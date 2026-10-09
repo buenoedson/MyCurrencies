@@ -10,3 +10,4 @@ Thumbs.db
 .release/
 HISTORICO_SESSAO.md
 sync.ffs_db
+logs/
