@@ -1,6 +1,7 @@
 # Configurações do VS Code e Language Servers
 .vscode/
 .luarc.json
+.gitignore
 
 # Arquivos de Sistema Operacional
 .DS_Store
