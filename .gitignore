@@ -1,7 +1,6 @@
 # Configurações do VS Code e Language Servers
 .vscode/
 .luarc.json
-.gitignore
 
 # Arquivos de Sistema Operacional
 .DS_Store
@@ -12,3 +11,4 @@ Thumbs.db
 HISTORICO_SESSAO.md
 sync.ffs_db
 logs/
+.agents/
