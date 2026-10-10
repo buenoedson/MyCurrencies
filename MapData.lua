@@ -119,6 +119,7 @@ ns.mapToExpansions = {
     [245]  = "Cataclysm", -- Tol Barad Peninsula
     [249]  = "Cataclysm", -- Uldum
     [338]  = "Cataclysm", -- Molten Front
+    [407]  = "Cataclysm", -- Darkmoon Island
     [568]  = "Cataclysm", -- Zul'Aman
     [638]  = "Cataclysm", -- Gilneas
     [639]  = "Cataclysm", -- Gilneas City

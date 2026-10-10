@@ -332,6 +332,8 @@ local HEADER_TO_EXPANSION = {
     -- Cataclysm (4.x)
     ["cataclysm"]           = "Cataclysm",
     ["cataclismo"]          = "Cataclysm",
+    ["darkmoon island"]     = "Cataclysm",
+    ["ilha de negraluna"]   = "Cataclysm",
 
     -- Wrath of the Lich King (3.x)
     ["wrath of the lich king"] = "Wrath of the Lich King",
