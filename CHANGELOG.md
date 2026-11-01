@@ -1,4 +1,4 @@
-# My Currencies Tracker
+﻿# My Currencies Tracker
 
 ## [2026.11.01.1]
 | API/Evento antigo | Substituto ou ação | Patch | Fonte |

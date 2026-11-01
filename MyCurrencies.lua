@@ -1,4 +1,4 @@
-local addonName, ns = ...
+﻿local addonName, ns = ...
 local L = MyCurrenciesL
 
 -- --- DADOS PADRÃO ---
@@ -801,18 +801,9 @@ local function CreateIconFrame(index)
 end
 
 local standardFont = nil
-local isUpdatePending = false
+local UpdateDisplay
 
-local function RequestUpdateDisplay()
-    if isUpdatePending then return end
-    isUpdatePending = true
-    C_Timer.After(0.05, function()
-        isUpdatePending = false
-        UpdateDisplay()
-    end)
-end
-
-local function UpdateDisplay()
+UpdateDisplay = function()
     if not MyCurrenciesDB then return end
     local db = MyCurrenciesDB
     
@@ -940,6 +931,16 @@ local function UpdateDisplay()
     
     -- Atualiza debug display (se ativado)
     UpdateDebugDisplay()
+end
+
+local isUpdatePending = false
+local function RequestUpdateDisplay()
+    if isUpdatePending then return end
+    isUpdatePending = true
+    C_Timer.After(0.05, function()
+        isUpdatePending = false
+        if UpdateDisplay then UpdateDisplay() end
+    end)
 end
 
 local scrollChild
