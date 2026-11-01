@@ -23,19 +23,21 @@ local defaults = {
 -- MODO DEBUG / DESENVOLVEDOR
 -- ============================================================================
 local debugFrame = nil
+local GetMapHierarchyString
+
 local function CreateDebugFrame()
     if debugFrame then return end
-        debugFrame = CreateFrame("Frame", nil, UIParent)
-        debugFrame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 10, -200)
-        debugFrame:SetSize(300, 50)
-        debugFrame:Hide()
-        -- Torna o debugFrame arrastável, mas preso à tela
-        debugFrame:SetMovable(true)
-        debugFrame:EnableMouse(true)
-        debugFrame:SetClampedToScreen(true)
-        debugFrame:RegisterForDrag("LeftButton")
-        debugFrame:SetScript("OnDragStart", debugFrame.StartMoving)
-        debugFrame:SetScript("OnDragStop", debugFrame.StopMovingOrSizing)
+    debugFrame = CreateFrame("Frame", nil, UIParent)
+    debugFrame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 10, -200)
+    debugFrame:SetSize(300, 50)
+    debugFrame:Hide()
+    -- Torna o debugFrame arrastável, mas preso à tela
+    debugFrame:SetMovable(true)
+    debugFrame:EnableMouse(true)
+    debugFrame:SetClampedToScreen(true)
+    debugFrame:RegisterForDrag("LeftButton")
+    debugFrame:SetScript("OnDragStart", debugFrame.StartMoving)
+    debugFrame:SetScript("OnDragStop", debugFrame.StopMovingOrSizing)
 
     debugFrame.bg = debugFrame:CreateTexture(nil, "BACKGROUND")
     debugFrame.bg:SetAllPoints(true)
@@ -45,6 +47,25 @@ local function CreateDebugFrame()
     debugFrame.text:SetAllPoints(true)
     debugFrame.text:SetJustifyH("LEFT")
     debugFrame.text:SetText("")
+
+    -- Handlers estáticos configurados uma única vez para eliminar alocação repetitiva de closures
+    debugFrame:SetScript("OnEnter", function(self)
+        if not MyCurrenciesDB or not MyCurrenciesDB.debugMode then return end
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:AddLine("|cFFFFD100" .. (L:S("DEBUG_HIERARCHY_TITLE") or "Hierarquia do Mapa"))
+        local hierarchy = GetMapHierarchyString and GetMapHierarchyString(self.currentMapID) or ""
+        if hierarchy == "" then
+            GameTooltip:AddLine(L:S("DEBUG_NO_MAP_DATA") or "Sem dados de mapa", 1, 1, 1, true)
+        else
+            for line in string.gmatch(hierarchy, "[^\n]+") do
+                GameTooltip:AddLine(line, 1, 1, 1, true)
+            end
+        end
+        GameTooltip:Show()
+    end)
+    debugFrame:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
 end
 
 local EXPANSION_LOC_KEYS = {
@@ -74,7 +95,7 @@ local function GetLocalizedExpansion(expName)
     return expName
 end
 
-local function GetMapHierarchyString(mapID)
+GetMapHierarchyString = function(mapID)
     if not mapID or mapID <= 0 then return "" end
     local parts = {}
     local current = mapID
@@ -161,24 +182,7 @@ local function UpdateDebugDisplay()
     local text = (L:S("DEBUG_MAP_ID") or "Mapa ID:") .. " |cFF00CCFF" .. (mapID or "nil") .. "|r (|cFFCCCCCC" .. mapName .. "|r)\n"
     text = text .. (L:S("DEBUG_EXPANSION") or "Expansao:") .. " " .. expColor .. expText .. "|r"
     
-    -- Mostra hierarquia completa no tooltip
-    debugFrame:SetScript("OnEnter", function()
-        if not MyCurrenciesDB.debugMode then return end
-        GameTooltip:SetOwner(debugFrame, "ANCHOR_RIGHT")
-        GameTooltip:AddLine("|cFFFFD100" .. L:S("DEBUG_HIERARCHY_TITLE"))
-        local hierarchy = GetMapHierarchyString(mapID)
-        if hierarchy == "" then
-            GameTooltip:AddLine(L:S("DEBUG_NO_MAP_DATA") or "Sem dados de mapa", 1, 1, 1, true)
-        else
-            for line in string.gmatch(hierarchy, "[^\n]+") do
-                GameTooltip:AddLine(line, 1, 1, 1, true)
-            end
-        end
-        GameTooltip:Show()
-    end)
-    debugFrame:SetScript("OnLeave", function()
-        GameTooltip:Hide()
-    end)
+    debugFrame.currentMapID = mapID
     
     debugFrame.text:SetText(text)
     debugFrame:Show()
@@ -471,6 +475,7 @@ local function LoadGameCurrencies()
                 type = mData.type or 'item',
                 id = mData.id,
                 name = mData.name,
+                key = key,
                 threshold = mData.threshold
             })
         end
@@ -554,6 +559,7 @@ local function LoadGameCurrencies()
                             type = 'currency',
                             id = currencyID,
                             name = info.name or ("Currency " .. currencyID),
+                            key = key,
                             orderIndex = #finalData + 1
                         })
                     end
@@ -591,6 +597,7 @@ local function LoadGameCurrencies()
                         type = itemType,
                         id = item.id,
                         name = item.name or "Custom Item",
+                        key = key,
                         custom = true,
                         orderIndex = #finalData + 1
                     })
@@ -665,20 +672,56 @@ f:SetScript("OnLeave", function() f.bg:SetColorTexture(0,0,0,0) end)
 
 local frames = {}
 local optionCheckboxes = {}
+local pendingItemQueries = {}
+
+local function ResolveTrackedItemName(itemID)
+    if not itemID or not pendingItemQueries[itemID] then return end
+    local name = C_Item.GetItemInfo(itemID)
+    if not name then return end
+
+    pendingItemQueries[itemID] = nil
+
+    for i, data in ipairs(trackedData) do
+        if data.type == "item" and data.id == itemID then
+            data.name = name
+            if optionCheckboxes[i] and optionCheckboxes[i].text then
+                optionCheckboxes[i].text:SetText(name)
+            end
+            if data.custom and MyCurrenciesDB and MyCurrenciesDB.customItems then
+                for _, cItem in ipairs(MyCurrenciesDB.customItems) do
+                    if cItem.id == itemID and (cItem.type or 'item') == 'item' then
+                        cItem.name = name
+                        break
+                    end
+                end
+            end
+        end
+    end
+end
 
 local function UpdateLocalizedNames()
     for i, data in ipairs(trackedData) do
         local name
         if data.type == "currency" then
-            local info = C_CurrencyInfo.GetBasicCurrencyInfo(data.id)
-            if info and info.name then name = info.name end
+            -- Apenas moedas manuais ou personalizadas necessitam de consulta avulsa; moedas do jogo já vêm localizadas
+            if data.custom or not data.orderIndex then
+                local info = C_CurrencyInfo.GetBasicCurrencyInfo(data.id)
+                if info and info.name then name = info.name end
+            end
         elseif data.type == "item" then
             name = C_Item.GetItemInfo(data.id)
-            if not name then C_Item.RequestLoadItemDataByID(data.id) end
+            if not name then
+                pendingItemQueries[data.id] = true
+                C_Item.RequestLoadItemDataByID(data.id)
+            else
+                pendingItemQueries[data.id] = nil
+            end
         end
         if name then
             data.name = name
-            if optionCheckboxes[i] then optionCheckboxes[i].text:SetText(name) end
+            if optionCheckboxes[i] and optionCheckboxes[i].text then
+                optionCheckboxes[i].text:SetText(name)
+            end
             if data.custom and MyCurrenciesDB and MyCurrenciesDB.customItems then
                 for _, cItem in ipairs(MyCurrenciesDB.customItems) do
                     if cItem.id == data.id and (cItem.type or 'item') == (data.type or 'item') then
@@ -757,6 +800,18 @@ local function CreateIconFrame(index)
     return icon
 end
 
+local standardFont = nil
+local isUpdatePending = false
+
+local function RequestUpdateDisplay()
+    if isUpdatePending then return end
+    isUpdatePending = true
+    C_Timer.After(0.05, function()
+        isUpdatePending = false
+        UpdateDisplay()
+    end)
+end
+
 local function UpdateDisplay()
     if not MyCurrenciesDB then return end
     local db = MyCurrenciesDB
@@ -776,7 +831,9 @@ local function UpdateDisplay()
     
     local visibleCount = 0
     local PADDING = 5
-    local STANDARD_TEXT_FONT = GameFontHighlightSmallOutline:GetFont()
+    if not standardFont then
+        standardFont = GameFontHighlightSmallOutline:GetFont()
+    end
     local latestGameExp = GetLatestGameExpansion()
     local currentMapExp = GetCurrentMapExpansion()
     
@@ -785,7 +842,7 @@ local function UpdateDisplay()
         local iconPath = nil
         local show = false
         
-        local dataKey = (data.type or 'item') .. ":" .. data.id
+        local dataKey = data.key or ((data.type or 'item') .. ":" .. data.id)
         local isEnabled = db.visibility[dataKey]
         if isEnabled == nil then isEnabled = db.visibility[data.id] end
         if isEnabled == nil then isEnabled = true end 
@@ -831,7 +888,7 @@ local function UpdateDisplay()
             frame:SetSize(db.iconSize, db.iconSize)
             frame.tex:SetTexture(iconPath)
             
-            frame.text:SetFont(STANDARD_TEXT_FONT, db.textSize, "OUTLINE")
+            frame.text:SetFont(standardFont, db.textSize, "OUTLINE")
             frame.text:SetText(count)
             
             local iconWidth = frame:GetWidth()
@@ -840,7 +897,7 @@ local function UpdateDisplay()
                 local ratio = iconWidth / textWidth
                 local newSize = math.floor(db.textSize * ratio)
                 if newSize < 8 then newSize = 8 end
-                frame.text:SetFont(STANDARD_TEXT_FONT, newSize, "OUTLINE")
+                frame.text:SetFont(standardFont, newSize, "OUTLINE")
             end
             
             frame.data = data
@@ -848,9 +905,13 @@ local function UpdateDisplay()
             if data.threshold and count >= data.threshold then
                 frame.glow:SetSize(db.iconSize * 1.7, db.iconSize * 1.7)
                 frame.glow:Show()
-                frame.glow.anim:Play()
+                if not frame.glow.anim:IsPlaying() then
+                    frame.glow.anim:Play()
+                end
             else
-                frame.glow.anim:Stop()
+                if frame.glow.anim:IsPlaying() then
+                    frame.glow.anim:Stop()
+                end
                 frame.glow:Hide()
             end
             
@@ -919,7 +980,7 @@ local function UpdateOptionsList(filterText)
                 local allCatChecked = true
                 for _, v in ipairs(trackedData) do
                     if v.cat == data.cat then
-                        local kKey = (v.type or 'item') .. ":" .. v.id
+                        local kKey = v.key or ((v.type or 'item') .. ":" .. v.id)
                         local isVis = MyCurrenciesDB.visibility[kKey]
                         if isVis == nil then isVis = MyCurrenciesDB.visibility[v.id] end
                         if isVis == nil then isVis = true end
@@ -937,13 +998,13 @@ local function UpdateOptionsList(filterText)
                     local state = self:GetChecked()
                     for k, v in ipairs(trackedData) do
                         if v.cat == targetCat then
-                            local kKey = (v.type or 'item') .. ":" .. v.id
+                            local kKey = v.key or ((v.type or 'item') .. ":" .. v.id)
                             MyCurrenciesDB.visibility[kKey] = state
                             MyCurrenciesDB.visibility[v.id] = state
                             if optionCheckboxes[k] then optionCheckboxes[k]:SetChecked(state) end
                         end
                     end
-                    UpdateDisplay()
+                    RequestUpdateDisplay()
                 end)
                 yOffset = yOffset - 25
                 lastCategory = data.cat
@@ -960,7 +1021,7 @@ local function UpdateOptionsList(filterText)
             cb.text:SetText(data.name)
             cb:Show()
             
-            local dataKey = (data.type or 'item') .. ":" .. data.id
+            local dataKey = data.key or ((data.type or 'item') .. ":" .. data.id)
             local isChecked = MyCurrenciesDB.visibility[dataKey]
             if isChecked == nil then isChecked = MyCurrenciesDB.visibility[data.id] end
             if isChecked == nil then isChecked = true end
@@ -995,6 +1056,7 @@ local function UpdateOptionsList(filterText)
                     UpdateLocalizedNames()
                     UpdateOptionsList(MC_SearchBox and MC_SearchBox:GetText() or "")
                     UpdateDisplay()
+                    collectgarbage("collect")
                     print("|cFFFF6B6B" .. (L:S("REMOVED") or "Removed:") .. " " .. data.name .. "|r")
                 end)
             end
@@ -1507,6 +1569,7 @@ function CreateOptionsPanel()
         UpdateLocalizedNames()
         UpdateOptionsList()
         UpdateDisplay()
+        collectgarbage("collect")
         print("|cFF00FF00" .. (L:S("ADDED") or "Added:") .. " " .. name .. "|r")
         
         idInput:SetText("")
@@ -1541,7 +1604,7 @@ function CreateOptionsPanel()
     cbAll:SetScript("OnClick", function(self)
         local state = self:GetChecked()
         for i, data in ipairs(trackedData) do
-            local dataKey = (data.type or 'item') .. ":" .. data.id
+            local dataKey = data.key or ((data.type or 'item') .. ":" .. data.id)
             MyCurrenciesDB.visibility[dataKey] = state
             MyCurrenciesDB.visibility[data.id] = state
             if optionCheckboxes[i] then optionCheckboxes[i]:SetChecked(state) end
@@ -1606,30 +1669,32 @@ f:SetScript("OnEvent", function(self, event, arg1)
                 CreateOptionsPanel()
                 UpdateDisplay()
                 CheckDebugOnZoneChange()
+                collectgarbage("collect")
             end)
         else
-            UpdateDisplay()
+            RequestUpdateDisplay()
         end
     elseif event == "PLAYER_REGEN_DISABLED" or event == "PLAYER_REGEN_ENABLED" then
         UpdateDisplay()
     elseif event == "CURRENCY_DISPLAY_UPDATE" then
         if isInitialized then
-            LoadGameCurrencies()
-            UpdateLocalizedNames()
-            if optionsPanel and optionsPanel:IsShown() then
-                UpdateOptionsList(MC_SearchBox and MC_SearchBox:GetText() or "")
-            end
-            UpdateDisplay()
+            RequestUpdateDisplay()
         end
     elseif event == "GET_ITEM_INFO_RECEIVED" then
-        if isInitialized then UpdateLocalizedNames() end
+        if isInitialized and arg1 and pendingItemQueries[arg1] then
+            ResolveTrackedItemName(arg1)
+        end
     elseif event == "ZONE_CHANGED_NEW_AREA" or event == "ZONE_CHANGED" or event == "ZONE_CHANGED_INDOORS" then
         if isInitialized then
-            UpdateDisplay()
+            RequestUpdateDisplay()
             CheckDebugOnZoneChange()
         end
+    elseif event == "BAG_UPDATE_DELAYED" or event == "PLAYER_UPDATE_RESTING" then
+        if isInitialized then
+            RequestUpdateDisplay()
+        end
     else
-        if isInitialized then UpdateDisplay() end
+        if isInitialized then RequestUpdateDisplay() end
     end
 end)
 
